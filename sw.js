@@ -1,5 +1,9 @@
-/* HILAL service worker — cache-first app shell (offline penuh) */
-const CACHE = 'hilal-v1';
+/* HILAL service worker
+   - Halaman (navigasi/HTML): network-first  -> selalu versi terbaru saat online,
+     jatuh ke cache saat offline.
+   - Aset statis (ikon/manifest): cache-first -> cepat & hemat.
+   Bump CACHE setiap rilis untuk membersihkan cache lama. */
+const CACHE = 'hilal-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -26,22 +30,34 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const isHTML = req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html');
+
+  if (isHTML) {
+    // network-first untuk halaman
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('./index.html', copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // cache-first untuk aset statis
   e.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
-      return fetch(req)
-        .then((res) => {
-          // simpan salinan untuk akses berikutnya (same-origin saja)
-          if (res && res.status === 200 && new URL(req.url).origin === location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => {
-          // fallback untuk navigasi saat offline
-          if (req.mode === 'navigate') return caches.match('./index.html');
-        });
+      return fetch(req).then((res) => {
+        if (res && res.status === 200 && new URL(req.url).origin === location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        }
+        return res;
+      });
     })
   );
 });

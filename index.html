@@ -160,13 +160,13 @@ body::before{ /* faint star field */
 .btn.block{ width:100%; }
 
 /* ---------- calendar ---------- */
-.cal-head{ display:grid; grid-template-columns:46px 1fr 46px; align-items:center; gap:8px; margin-bottom:8px; }
-.cal-head .nav{ width:46px; height:46px; border-radius:13px; border:1px solid var(--line);
-  background:var(--surface); color:var(--gold); font-size:22px; line-height:1; display:grid; place-items:center;
+.cal-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.cal-head .nav{ flex:0 0 44px; width:44px; height:44px; padding:0; border-radius:12px; border:1px solid var(--line);
+  background:var(--surface); color:var(--gold); font-size:24px; line-height:42px; text-align:center;
   cursor:pointer; -webkit-user-select:none; user-select:none; }
-.cal-head .nav:active{ transform:scale(.94); background:var(--surface-3); }
-.cal-head .title{ text-align:center; font-family:var(--serif); min-width:0; }
-.cal-head .title .m{ font-size:21px; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-head .nav:active{ background:var(--surface-3); }
+.cal-head .title{ flex:1 1 auto; min-width:0; text-align:center; font-family:var(--serif); }
+.cal-head .title .m{ font-size:20px; color:var(--cream); }
 .cal-head .title .y{ font-size:12px; color:var(--muted); letter-spacing:.1em; margin-top:2px; }
 .today-jump{ width:100%; margin:6px 0 14px; font-size:12.5px; }
 .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
@@ -180,11 +180,11 @@ body::before{ /* faint star field */
 .cell.muted .hd{ color:var(--muted); }
 .cell.sel{ background:linear-gradient(160deg,var(--emerald),#0e3a2d); border-color:var(--line); }
 .cell.today{ background:linear-gradient(160deg,var(--gold-hi),var(--gold)); border-color:var(--gold-hi);
-  box-shadow:0 6px 18px -7px rgba(203,166,78,.65); }
+  box-shadow:0 2px 8px -4px rgba(203,166,78,.5); }
 .cell.today .hd{ color:#241d0c; font-weight:600; }
 .cell.today .gd{ color:#5c4a1c; }
-.cell .tnow{ font-size:7px; letter-spacing:.06em; text-transform:uppercase; color:#241d0c; font-weight:700; margin-top:2px; }
 .cell .ev-dot{ position:absolute; bottom:5px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
+.cell.today .ev-dot{ background:#241d0c; }
 .cell.muted .ev-dot{ opacity:.5; }
 .cal-detail{ margin-top:16px; }
 
@@ -226,8 +226,8 @@ textarea{ resize:vertical; min-height:64px; }
 .empty .d{ font-size:13px; margin-top:6px; line-height:1.5; }
 .fab{ position:fixed; right:max(18px,calc((100vw - 480px)/2 + 18px)); bottom:calc(96px + env(safe-area-inset-bottom));
   width:56px; height:56px; border-radius:18px; border:none; z-index:20;
-  background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; font-size:28px; cursor:pointer;
-  box-shadow:0 14px 30px -10px rgba(0,0,0,.7); display:grid; place-items:center; }
+  background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; font-size:32px; cursor:pointer;
+  box-shadow:0 14px 30px -10px rgba(0,0,0,.7); text-align:center; line-height:56px; padding:0; }
 .fab:active{ transform:scale(.94); }
 
 /* ---------- bottom nav ---------- */
@@ -237,8 +237,8 @@ textarea{ resize:vertical; min-height:64px; }
   border-top:1px solid var(--line-soft); }
 .nav .inner{ max-width:480px; margin:0 auto; display:flex; }
 .nav button{ flex:1; border:none; background:none; color:var(--muted-2); padding:11px 4px 12px; cursor:pointer;
-  display:flex; flex-direction:column; align-items:center; gap:5px; font-family:var(--sans); font-size:10px; letter-spacing:.06em; }
-.nav button svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.6; }
+  display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center; font-family:var(--sans); font-size:10px; letter-spacing:.06em; }
+.nav button svg{ width:22px; height:22px; margin:0 auto; stroke:currentColor; fill:none; stroke-width:1.6; }
 .nav button.on{ color:var(--gold-hi); }
 .nav button.on svg{ stroke:var(--gold-hi); }
 
@@ -619,7 +619,7 @@ function renderCal(){
   showCalDay(onToday?noon(new Date()):null);
 }
 function cellHTML(g, mainNum, subLabel, isT, hasEv){
-  return `<div class="cell ${isT?'today':''}" data-date="${toISO(g)}"><div class="hd">${mainNum}</div><div class="gd">${subLabel}</div>${isT?'<div class="tnow">Hari ini</div>':((hasEv)?'<span class="ev-dot"></span>':'')}</div>`;
+  return `<div class="cell ${isT?'today':''}" data-date="${toISO(g)}"><div class="hd">${mainNum}</div><div class="gd">${subLabel}</div>${hasEv?'<span class="ev-dot"></span>':''}</div>`;
 }
 function calHijri(){
   const {hy,hm}=calH;

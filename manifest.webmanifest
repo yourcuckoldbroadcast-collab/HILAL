@@ -1,0 +1,19 @@
+{
+  "name": "HILAL — Almanak Ibadah",
+  "short_name": "HILAL",
+  "description": "Almanak Islam yang menyorot momentum ibadah terdekat berdasarkan kalender Hijriah. Offline-first, tanpa server.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05120d",
+  "theme_color": "#06140f",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

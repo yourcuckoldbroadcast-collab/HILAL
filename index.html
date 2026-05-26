@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>HILAL — Almanak Ibadah</title>
+<meta name="description" content="Almanak Islam yang menyorot momentum ibadah terdekat berdasarkan kalender Hijriah. Offline-first, tanpa server." />
+<meta name="theme-color" content="#06140f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="HILAL" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<link rel="icon" href="./favicon-64.png" />
+<style>
+:root{
+  --bg:#071f18; --bg2:#05120d;
+  --surface:#0c3025; --surface-2:#0f3a2d; --surface-3:#124235;
+  --line:rgba(203,166,78,.16); --line-soft:rgba(242,233,216,.07);
+  --emerald:#1b5e47; --teal:#0f5c57;
+  --gold:#cba64e; --gold-hi:#e6cd92; --gold-soft:rgba(203,166,78,.13);
+  --cream:#f3ebd9; --cream-2:#cbd5c7; --muted:#86a092; --muted-2:#5d7568;
+  --danger:#c98a6a;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.7);
+  --radius:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans); color:var(--cream); background:var(--bg2);
+  min-height:100vh; min-height:100dvh; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, rgba(27,94,71,.55), transparent 60%),
+    radial-gradient(90% 60% at 85% 5%, rgba(15,92,87,.32), transparent 55%),
+    radial-gradient(60% 40% at 12% 30%, rgba(203,166,78,.06), transparent 60%);
+  background-attachment:fixed;
+}
+body::before{ /* faint star field */
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:.5; z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 18%, rgba(242,233,216,.6), transparent),
+    radial-gradient(1px 1px at 70% 12%, rgba(242,233,216,.45), transparent),
+    radial-gradient(1px 1px at 42% 28%, rgba(203,166,78,.5), transparent),
+    radial-gradient(1px 1px at 88% 22%, rgba(242,233,216,.4), transparent),
+    radial-gradient(1px 1px at 12% 42%, rgba(242,233,216,.3), transparent);
+}
+.wrap{ position:relative; z-index:1; max-width:480px; margin:0 auto; min-height:100dvh;
+  display:flex; flex-direction:column; padding:0 16px;
+  padding-top:max(14px,env(safe-area-inset-top));
+  padding-bottom:calc(86px + env(safe-area-inset-bottom)); }
+
+/* ---------- top bar ---------- */
+.topbar{ display:flex; align-items:center; justify-content:space-between; padding:6px 2px 14px; }
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand .mark{ width:30px; height:30px; flex:none; }
+.brand h1{ font-family:var(--serif); font-weight:600; font-size:20px; letter-spacing:.32em; margin:0;
+  color:var(--cream); padding-left:.32em; }
+.topbar .today-mini{ text-align:right; font-family:var(--serif); }
+.today-mini .h{ font-size:14px; color:var(--gold-hi); letter-spacing:.02em; }
+.today-mini .g{ font-size:11px; color:var(--muted); letter-spacing:.04em; }
+
+/* ---------- view system ---------- */
+.view{ display:none; animation:rise .5s cubic-bezier(.2,.7,.2,1) both; }
+.view.active{ display:block; }
+@keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+.stagger>*{ animation:rise .55s cubic-bezier(.2,.7,.2,1) both; }
+.stagger>*:nth-child(1){animation-delay:.02s}
+.stagger>*:nth-child(2){animation-delay:.08s}
+.stagger>*:nth-child(3){animation-delay:.14s}
+.stagger>*:nth-child(4){animation-delay:.2s}
+.stagger>*:nth-child(5){animation-delay:.26s}
+.stagger>*:nth-child(6){animation-delay:.32s}
+
+/* ---------- today strip ---------- */
+.daystrip{ text-align:center; padding:6px 0 18px; }
+.daystrip .weekday{ font-family:var(--sans); font-size:12px; letter-spacing:.34em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:6px; }
+.daystrip .hijri{ font-family:var(--serif); font-size:34px; line-height:1.05; color:var(--cream); }
+.daystrip .hijri b{ color:var(--gold-hi); font-weight:600; }
+.daystrip .greg{ font-family:var(--serif); font-size:14px; color:var(--cream-2); margin-top:6px; font-style:italic; }
+
+/* ---------- cards ---------- */
+.card{ background:linear-gradient(160deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line); border-radius:var(--radius); padding:18px;
+  box-shadow:var(--shadow); margin-bottom:14px; }
+.section-title{ font-family:var(--sans); font-size:11px; letter-spacing:.28em; text-transform:uppercase;
+  color:var(--muted); margin:22px 4px 12px; display:flex; align-items:center; gap:10px; }
+.section-title::after{ content:""; flex:1; height:1px; background:var(--line-soft); }
+
+/* ---------- hero ---------- */
+.hero{ position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 120% at 88% -20%, rgba(203,166,78,.18), transparent 55%),
+    linear-gradient(155deg,#10463a,#0a2c23);
+  border:1px solid var(--line); border-radius:24px; padding:24px 22px 22px;
+  box-shadow:var(--shadow); }
+.hero .moon{ position:absolute; right:-26px; top:-30px; width:150px; height:150px; opacity:.9; }
+.hero .kicker{ font-size:11px; letter-spacing:.26em; text-transform:uppercase; color:var(--gold);
+  display:flex; align-items:center; gap:8px; }
+.hero .kicker .dot{ width:6px; height:6px; border-radius:50%; background:var(--gold);
+  box-shadow:0 0 0 0 rgba(203,166,78,.6); animation:pulse 2.4s infinite; }
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(203,166,78,.5)}70%{box-shadow:0 0 0 9px rgba(203,166,78,0)}100%{box-shadow:0 0 0 0 rgba(203,166,78,0)}}
+.hero h2{ font-family:var(--serif); font-size:30px; line-height:1.08; margin:14px 0 4px; max-width:78%; }
+.hero .hdate{ font-family:var(--serif); font-style:italic; color:var(--cream-2); font-size:14px; }
+.hero .count{ margin-top:18px; display:flex; align-items:baseline; gap:10px; }
+.hero .count .num{ font-family:var(--serif); font-size:46px; color:var(--gold-hi); line-height:1; font-weight:600; }
+.hero .count .lbl{ font-size:13px; color:var(--cream-2); letter-spacing:.04em; }
+.hero .insight{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line-soft);
+  font-size:13.5px; line-height:1.55; color:var(--cream-2); }
+.tag{ display:inline-block; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  padding:3px 8px; border-radius:999px; border:1px solid var(--line); color:var(--gold);
+  background:var(--gold-soft); }
+.tag.est{ color:var(--danger); border-color:rgba(201,138,106,.3); background:rgba(201,138,106,.1); }
+
+/* ---------- chips ---------- */
+.chips{ display:flex; gap:9px; flex-wrap:wrap; }
+.chip{ font-size:12px; padding:9px 13px; border-radius:999px; border:1px solid var(--line);
+  background:var(--surface); color:var(--cream); display:flex; align-items:center; gap:7px; cursor:pointer; }
+.chip .ic{ color:var(--gold); font-size:13px; }
+.chip:active{ transform:scale(.97); }
+
+/* ---------- feed ---------- */
+.toggle{ display:flex; background:var(--surface); border:1px solid var(--line); border-radius:999px;
+  padding:4px; gap:4px; }
+.toggle button{ flex:1; border:none; background:none; color:var(--muted); font-family:var(--sans);
+  font-size:12.5px; letter-spacing:.04em; padding:9px 8px; border-radius:999px; cursor:pointer; }
+.toggle button.on{ background:linear-gradient(160deg,var(--emerald),#134537); color:var(--cream);
+  box-shadow:0 4px 14px -6px rgba(0,0,0,.6); }
+.evt{ display:flex; gap:14px; padding:15px 4px; border-bottom:1px solid var(--line-soft); cursor:pointer; }
+.evt:last-child{ border-bottom:none; }
+.evt .when{ flex:none; width:58px; text-align:center; }
+.evt .when .n{ font-family:var(--serif); font-size:24px; color:var(--gold-hi); line-height:1; }
+.evt .when .u{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+.evt .when.now .n{ font-size:13px; line-height:1.2; padding-top:5px; color:var(--gold); }
+.evt .body{ flex:1; min-width:0; }
+.evt .body .t{ font-family:var(--serif); font-size:17px; color:var(--cream); }
+.evt .body .m{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.evt .body .ins{ font-size:13px; line-height:1.5; color:var(--cream-2); margin-top:9px; display:none;
+  padding:11px 13px; background:rgba(0,0,0,.18); border-radius:12px; border:1px solid var(--line-soft); }
+.evt.open .ins{ display:block; }
+.cat-dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+.cat-weekly{ background:#6fae8f } .cat-monthly{ background:var(--teal) }
+.cat-annual{ background:var(--gold) } .cat-user{ background:#b98ad0 } .cat-season{ background:#d0a76a }
+.group-label{ font-family:var(--serif); font-size:13px; font-style:italic; color:var(--gold);
+  margin:18px 4px 2px; }
+
+/* ---------- banner ---------- */
+.banner{ background:linear-gradient(160deg,#3a3014,#241d0c); border:1px solid rgba(203,166,78,.35);
+  border-radius:16px; padding:16px; margin-bottom:14px; }
+.banner .h{ font-family:var(--serif); font-size:16px; color:var(--gold-hi); margin-bottom:4px; }
+.banner .p{ font-size:13px; color:var(--cream-2); line-height:1.5; }
+.banner .row{ display:flex; gap:9px; margin-top:13px; }
+.btn{ font-family:var(--sans); font-size:13px; padding:10px 15px; border-radius:11px; cursor:pointer;
+  border:1px solid var(--line); background:var(--surface); color:var(--cream); }
+.btn.primary{ background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; border-color:transparent; font-weight:600; }
+.btn.ghost{ background:none; }
+.btn:active{ transform:scale(.97); }
+.btn.block{ width:100%; }
+
+/* ---------- calendar ---------- */
+.cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.cal-head .nav{ width:38px; height:38px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); color:var(--gold); font-size:18px; display:grid; place-items:center; cursor:pointer; }
+.cal-head .title{ text-align:center; font-family:var(--serif); }
+.cal-head .title .m{ font-size:20px; color:var(--cream); }
+.cal-head .title .y{ font-size:12px; color:var(--muted); letter-spacing:.1em; margin-top:2px; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-grid .dow{ text-align:center; font-size:10px; letter-spacing:.06em; color:var(--muted);
+  padding:4px 0 8px; text-transform:uppercase; }
+.cell{ aspect-ratio:1; border-radius:11px; border:1px solid transparent; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:pointer; position:relative; background:rgba(255,255,255,.015); }
+.cell .hd{ font-family:var(--serif); font-size:16px; color:var(--cream); }
+.cell .gd{ font-size:8.5px; color:var(--muted-2); margin-top:1px; }
+.cell.muted{ opacity:.32; }
+.cell.today{ border-color:var(--gold); background:var(--gold-soft); }
+.cell.today .hd{ color:var(--gold-hi); }
+.cell.sel{ background:linear-gradient(160deg,var(--emerald),#0e3a2d); border-color:var(--line); }
+.cell .ev-dot{ position:absolute; bottom:6px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
+.cal-detail{ margin-top:16px; }
+
+/* ---------- forms ---------- */
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:7px; }
+input[type=text],input[type=date],input[type=number],textarea,select{
+  width:100%; font-family:var(--sans); font-size:15px; color:var(--cream);
+  background:rgba(0,0,0,.22); border:1px solid var(--line); border-radius:12px; padding:12px 13px; }
+input:focus,textarea:focus,select:focus{ outline:none; border-color:var(--gold); }
+textarea{ resize:vertical; min-height:64px; }
+.seg{ display:flex; gap:7px; }
+.seg button{ flex:1; padding:11px 6px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); color:var(--muted); font-family:var(--sans); font-size:12.5px; cursor:pointer; }
+.seg button.on{ background:linear-gradient(160deg,var(--emerald),#134537); color:var(--cream); border-color:transparent; }
+
+/* ---------- settings ---------- */
+.set-row{ display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:15px 2px; border-bottom:1px solid var(--line-soft); }
+.set-row:last-child{ border-bottom:none; }
+.set-row .l .t{ font-size:15px; color:var(--cream); }
+.set-row .l .d{ font-size:12px; color:var(--muted); margin-top:3px; line-height:1.45; }
+.stepper{ display:flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:11px; overflow:hidden; flex:none; }
+.stepper button{ width:40px; height:40px; border:none; background:var(--surface); color:var(--gold); font-size:20px; cursor:pointer; }
+.stepper .v{ width:46px; text-align:center; font-family:var(--serif); font-size:17px; color:var(--cream-2); }
+.lockcard{ border:1px solid var(--line-soft); border-radius:13px; padding:13px; margin-bottom:10px; background:rgba(0,0,0,.14); }
+.lockcard .top{ display:flex; justify-content:space-between; align-items:center; }
+.lockcard .nm{ font-family:var(--serif); font-size:16px; color:var(--cream); }
+.lockcard .st{ font-size:11.5px; margin-top:2px; }
+.lockcard .st.locked{ color:var(--gold-hi); } .lockcard .st.est{ color:var(--danger); }
+.lockcard .actions{ display:flex; gap:8px; margin-top:11px; }
+.muted-note{ font-size:12px; color:var(--muted); line-height:1.55; }
+
+/* ---------- empty ---------- */
+.empty{ text-align:center; padding:42px 20px; color:var(--muted); }
+.empty .mn{ width:54px; height:54px; opacity:.5; margin:0 auto 14px; }
+.empty .t{ font-family:var(--serif); font-size:17px; color:var(--cream-2); }
+.empty .d{ font-size:13px; margin-top:6px; line-height:1.5; }
+.fab{ position:fixed; right:max(18px,calc((100vw - 480px)/2 + 18px)); bottom:calc(96px + env(safe-area-inset-bottom));
+  width:56px; height:56px; border-radius:18px; border:none; z-index:20;
+  background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; font-size:28px; cursor:pointer;
+  box-shadow:0 14px 30px -10px rgba(0,0,0,.7); display:grid; place-items:center; }
+.fab:active{ transform:scale(.94); }
+
+/* ---------- bottom nav ---------- */
+.nav{ position:fixed; left:0; right:0; bottom:0; z-index:30;
+  padding-bottom:env(safe-area-inset-bottom);
+  background:linear-gradient(0deg,var(--bg2),rgba(5,18,13,.86)); backdrop-filter:blur(14px);
+  border-top:1px solid var(--line-soft); }
+.nav .inner{ max-width:480px; margin:0 auto; display:flex; }
+.nav button{ flex:1; border:none; background:none; color:var(--muted-2); padding:11px 4px 12px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:5px; font-family:var(--sans); font-size:10px; letter-spacing:.06em; }
+.nav button svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.6; }
+.nav button.on{ color:var(--gold-hi); }
+.nav button.on svg{ stroke:var(--gold-hi); }
+
+/* ---------- modal ---------- */
+.modal{ position:fixed; inset:0; z-index:50; display:none; align-items:flex-end; justify-content:center; }
+.modal.show{ display:flex; }
+.modal .scrim{ position:absolute; inset:0; background:rgba(2,8,6,.72); backdrop-filter:blur(3px); animation:fade .2s both; }
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{ position:relative; width:100%; max-width:480px; background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line); border-bottom:none; border-radius:24px 24px 0 0; padding:22px 18px calc(26px + env(safe-area-inset-bottom));
+  box-shadow:var(--shadow); animation:slideup .34s cubic-bezier(.2,.8,.2,1) both; max-height:88dvh; overflow:auto; }
+@keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+.sheet .grab{ width:42px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 18px; }
+.sheet h3{ font-family:var(--serif); font-size:21px; margin:0 0 16px; color:var(--cream); }
+.toast{ position:fixed; bottom:calc(104px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+  background:var(--surface-3); border:1px solid var(--line); color:var(--cream); font-size:13px;
+  padding:11px 17px; border-radius:99px; z-index:60; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+  transition:opacity .25s, transform .25s; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+.link{ color:var(--gold); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M64 18a34 34 0 1 0 0 64 27 27 0 1 1 0-64z" fill="#cba64e"/>
+        <path d="M70 30l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2-6.5-3.4-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1z" fill="#e6cd92"/>
+      </svg>
+      <h1>HILAL</h1>
+    </div>
+    <div class="today-mini">
+      <div class="h" id="tmH">—</div>
+      <div class="g" id="tmG">—</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <section class="view active" id="v-home"></section>
+  <!-- CALENDAR -->
+  <section class="view" id="v-cal"></section>
+  <!-- CUSTOM -->
+  <section class="view" id="v-notes"></section>
+  <!-- SETTINGS -->
+  <section class="view" id="v-set"></section>
+</div>
+
+<button class="fab" id="fab" style="display:none" aria-label="Tambah catatan">+</button>
+
+<nav class="nav"><div class="inner">
+  <button data-tab="home" class="on">
+    <svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/></svg>Beranda</button>
+  <button data-tab="cal">
+    <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg>Kalender</button>
+  <button data-tab="notes">
+    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M9 8h4"/></svg>Catatan</button>
+  <button data-tab="set">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Atur</button>
+</div></nav>
+
+<div class="modal" id="modal"><div class="scrim" data-close></div><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   HILAL — Almanak Ibadah
+   Engine Hijriah (Umm al-Qura via Intl) + koreksi hari + lock
+   penetapan oleh user. Offline-first, data di localStorage.
+   ============================================================ */
+
+const MH = ['Muharram','Safar','Rabiul Awal','Rabiul Akhir','Jumadil Awal','Jumadil Akhir','Rajab',"Sya'ban",'Ramadhan','Syawal',"Dzulqa'dah",'Dzulhijjah'];
+const MG = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const DG = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const DGS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MS = 86400000;
+
+/* ---------- state ---------- */
+const DEFAULT = { settings:{ dayOffset:0, feedMode:'countdays' }, locks:{}, custom:[], dismissed:{} };
+let S = load();
+function load(){ try{ return Object.assign(JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(localStorage.getItem('hilal')||'{}')); }catch(e){ return JSON.parse(JSON.stringify(DEFAULT)); } }
+function save(){ try{ localStorage.setItem('hilal', JSON.stringify(S)); }catch(e){} }
+
+/* ---------- hijri engine ---------- */
+const FMT = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura',{day:'numeric',month:'numeric',year:'numeric'});
+function noon(d){ const x=new Date(d); x.setHours(12,0,0,0); return x; }
+function addDays(d,n){ return new Date(noon(d).getTime()+n*MS); }
+function sameDay(a,b){ a=noon(a); b=noon(b); return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function daysFromToday(d){ return Math.round((noon(d)-noon(new Date()))/MS); }
+function toISO(d){ d=noon(d); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fromISO(s){ const [y,m,dd]=s.split('-').map(Number); return noon(new Date(y,m-1,dd)); }
+
+function g2hRaw(date){ const p=FMT.formatToParts(noon(date)); let o={}; for(const x of p){ if(x.type==='year')o.hy=+x.value; if(x.type==='month')o.hm=+x.value; if(x.type==='day')o.hd=+x.value; } return o; }
+function g2h(date){ return g2hRaw(addDays(date, S.settings.dayOffset||0)); }
+function h2gRaw(hy,hm,hd){
+  const epoch=new Date(Date.UTC(622,6,19));
+  const est=(hy-1)*354.367+(hm-1)*29.53+(hd-1);
+  let d=noon(new Date(epoch.getTime()+est*MS));
+  for(let i=0;i<8;i++){ const c=g2hRaw(d); const diff=(hy-c.hy)*354+(hm-c.hm)*29.53+(hd-c.hd); if(Math.abs(diff)<.5)break; d=addDays(d,Math.round(diff)); }
+  for(let s=-3;s<=3;s++){ const t=addDays(d,s); const c=g2hRaw(t); if(c.hy===hy&&c.hm===hm&&c.hd===hd) return t; }
+  return d;
+}
+function h2g(hy,hm,hd){
+  const key=hy+'-'+hm;
+  if(S.locks[key]) return addDays(fromISO(S.locks[key]), hd-1);     // lock = tanggal pasti dari user
+  return addDays(h2gRaw(hy,hm,hd), -(S.settings.dayOffset||0));
+}
+function fmtH(h){ return h.hd+' '+MH[h.hm-1]+' '+h.hy; }
+function fmtG(d){ d=noon(d); return DG[d.getDay()]+', '+d.getDate()+' '+MG[d.getMonth()]+' '+d.getFullYear(); }
+function fmtGshort(d){ d=noon(d); return d.getDate()+' '+MG[d.getMonth()].slice(0,3)+' '+d.getFullYear(); }
+
+/* ---------- event definitions ---------- */
+// lock=true => awal bulan ini termasuk penetapan resmi (isbat)
+const ANNUAL = [
+  {hm:1, hd:1,  key:'tahunbaru', t:'Tahun Baru Islam', ins:'Awal tahun Hijriah, memperingati hijrah Nabi ﷺ dari Makkah ke Madinah.'},
+  {hm:1, hd:9,  key:'tasua',     t:'Puasa Tasua',      ins:'Puasa sunnah pada 9 Muharram, mengiringi puasa Asyura.'},
+  {hm:1, hd:10, key:'asyura',    t:'Puasa Asyura',     ins:'Puasa sunnah yang sangat dianjurkan pada 10 Muharram.'},
+  {hm:3, hd:12, key:'maulid',    t:'Maulid Nabi ﷺ',    ins:'Peringatan kelahiran Nabi Muhammad ﷺ.'},
+  {hm:7, hd:27, key:'isramiraj', t:"Isra Mi'raj",      ins:'Peringatan perjalanan malam Nabi ﷺ dan diterimanya perintah shalat.'},
+  {hm:8, hd:15, key:'nisfu',     t:"Nisfu Sya'ban",    ins:'Malam pertengahan Sya\u2019ban, sebagian memperbanyak ibadah sebagai persiapan Ramadhan.'},
+  {hm:9, hd:1,  key:'ramadhan',  t:'Awal Ramadhan',    lock:true, ins:'Awal bulan puasa wajib. Tanggal pastinya ditetapkan melalui rukyat / penetapan resmi.'},
+  {hm:9, hd:17, key:'nuzulul',   t:"Nuzulul Qur'an",   ins:'Diperingati sebagai waktu pertama turunnya Al-Qur\u2019an.'},
+  {hm:10,hd:1,  key:'idulfitri', t:'Idul Fitri',       lock:true, ins:'Hari raya setelah Ramadhan. Tanggalnya ditetapkan melalui penetapan resmi.'},
+  {hm:12,hd:1,  key:'dzulhijjah',t:'Awal Dzulhijjah',  lock:true, ins:'Memulai sepuluh hari pertama Dzulhijjah yang utama untuk amal saleh.'},
+  {hm:12,hd:9,  key:'arafah',    t:'Puasa Arafah',     ins:'Puasa sunnah utama bagi yang tidak sedang berhaji.'},
+  {hm:12,hd:10, key:'iduladha',  t:'Idul Adha',        ins:'Hari raya kurban, diikuti hari Tasyrik (11\u201313 Dzulhijjah).'},
+];
+const LOCK_MONTHS = [ {hm:9,nm:'Awal Ramadhan'}, {hm:10,nm:'Idul Fitri (1 Syawal)'}, {hm:12,nm:'Awal Dzulhijjah'} ];
+const WEEKLY = [
+  {wd:1, t:'Puasa Senin', ins:'Hari Senin dianjurkan berpuasa sunnah.'},
+  {wd:4, t:'Puasa Kamis', ins:'Hari Kamis dianjurkan berpuasa sunnah; malam harinya adalah malam Jumat.'},
+  {wd:5, t:'Hari Jumat',  ins:'Hari paling utama dalam sepekan; dianjurkan memperbanyak shalawat dan membaca surah Al-Kahfi.'},
+];
+
+function isLockedMonth(hy,hm){ return !!S.locks[hy+'-'+hm]; }
+
+/* ---------- generate events ---------- */
+function genEvents(){
+  const today = noon(new Date());
+  const back = addDays(today,-1);
+  const horizon = addDays(today,380);
+  const out=[];
+  const push=(o)=>{ if(o.date>=back && o.date<=horizon) out.push(o); };
+  const th = g2h(today);
+
+  // annual
+  for(let hy=th.hy; hy<=th.hy+1; hy++){
+    for(const d of ANNUAL){
+      const date=h2g(hy,d.hm,d.hd);
+      const est = d.lock && !isLockedMonth(hy,d.hm);
+      // arafah/adha depend on dzulhijjah lock
+      const depEst = (d.hm===12 && (d.hd===9||d.hd===10) && !isLockedMonth(hy,12));
+      push({ id:'a-'+d.key+'-'+hy, source:'system', cat:'annual', t:d.t, ins:d.ins,
+             date, hijri:{hy,hm:d.hm,hd:d.hd}, est: est||depEst });
+    }
+  }
+  // monthly (awal bulan + ayyamul bidh) for 13 hijri months
+  let cy=th.hy, cm=th.hm;
+  for(let i=0;i<13;i++){
+    const d1=h2g(cy,cm,1);
+    push({ id:'m1-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Awal '+MH[cm-1],
+           ins:'Pergantian bulan Hijriah \u2014 momen memperbarui niat dan amalan.',
+           date:d1, hijri:{hy:cy,hm:cm,hd:1} });
+    const d13=h2g(cy,cm,13);
+    push({ id:'ab-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Puasa Ayyamul Bidh',
+           ins:'Puasa tiga hari di pertengahan bulan (13, 14, 15) \u2014 "hari-hari putih".',
+           date:d13, hijri:{hy:cy,hm:cm,hd:13}, span:'13\u201315 '+MH[cm-1] });
+    cm++; if(cm>12){cm=1;cy++;}
+  }
+  // weekly: next occurrence of each within 9 days
+  for(const w of WEEKLY){
+    let add=(w.wd - today.getDay()+7)%7;
+    const date=addDays(today,add);
+    push({ id:'w-'+w.wd, source:'system', cat:'weekly', t:w.t, ins:w.ins, date, weekly:true });
+  }
+  // custom
+  for(const c of S.custom){
+    const occ = nextCustomOccurrence(c, today, horizon);
+    if(occ) push({ id:'u-'+c.id, source:'user', cat:'user', t:c.title, ins:c.note||'', date:occ,
+                   recurDesc: recurDesc(c), customId:c.id });
+  }
+  out.sort((a,b)=> a.date-b.date || prio(b)-prio(a));
+  return out;
+}
+function nextCustomOccurrence(c, today, horizon){
+  if(c.type==='once'){ const d=fromISO(c.date); return (d>=addDays(today,-1)&&d<=horizon)?d:null; }
+  if(c.type==='weekly'){ let add=(c.weekday - today.getDay()+7)%7; return addDays(today,add); }
+  if(c.type==='monthly'){
+    const t=noon(today); let y=t.getFullYear(), m=t.getMonth();
+    for(let i=0;i<2;i++){
+      const last=new Date(y,m+1,0).getDate(); const day=Math.min(c.monthday,last);
+      const d=noon(new Date(y,m,day));
+      if(d>=t) return d;
+      m++; if(m>11){m=0;y++;}
+    }
+  }
+  return null;
+}
+function recurDesc(c){
+  if(c.type==='weekly') return 'Setiap '+DG[c.weekday];
+  if(c.type==='monthly') return 'Setiap tanggal '+c.monthday;
+  return 'Sekali';
+}
+function prio(e){ return e.cat==='season'?5:e.cat==='annual'?4:e.cat==='monthly'?2:e.cat==='user'?3:1; }
+
+/* ---------- seasonal contexts ---------- */
+function seasons(){
+  const th=g2h(new Date()); const out=[];
+  if([1,7,11,12].includes(th.hm)) out.push({t:'Bulan Haram',ins:'Termasuk empat bulan yang dimuliakan: Dzulqa\u2019dah, Dzulhijjah, Muharram, dan Rajab.'});
+  if(th.hm===12 && th.hd<=10) out.push({t:'10 Hari Pertama Dzulhijjah',ins:'Hari-hari yang utama untuk memperbanyak amal saleh.'});
+  if(th.hm===9 && th.hd>=21) out.push({t:'Sepuluh Malam Terakhir Ramadhan',ins:'Dianjurkan i\u2019tikaf dan memperbanyak ibadah; di dalamnya terdapat Lailatul Qadar.'});
+  if(th.hm===9) out.push({t:'Bulan Ramadhan',ins:'Bulan puasa, sabar, dan memperbanyak Al-Qur\u2019an.'});
+  if(th.hm===8) out.push({t:"Sya'ban \u2014 Persiapan Ramadhan",ins:'Bulan persiapan menuju Ramadhan; sebagian memperbanyak puasa sunnah.'});
+  return out;
+}
+
+/* ---------- isbat confirmation ---------- */
+function pendingConfirm(){
+  const today=noon(new Date()); const th=g2h(today);
+  for(let hy=th.hy; hy<=th.hy+1; hy++){
+    for(const lm of LOCK_MONTHS){
+      const key=hy+'-'+lm.hm;
+      if(S.locks[key]||S.dismissed['c'+key]) continue;
+      const est=addDays(h2gRaw(hy,lm.hm,1), -(S.settings.dayOffset||0));
+      const dd=daysFromToday(est);
+      if(dd>=0 && dd<=8) return {key,hy,hm:lm.hm,nm:lm.nm,est,dd};
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const $=(s,r=document)=>r.querySelector(s);
+const el=(h)=>{ const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstElementChild; };
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function whenLabel(d){ const n=daysFromToday(d); if(n===0)return{n:'Hari',u:'ini',now:true}; if(n===1)return{n:'Besok',u:'',now:true}; if(n<0)return{n:'Lalu',u:'',now:true}; return{n:String(n),u:'hari lagi'}; }
+
+const moonSVG='<svg class="moon" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="mg" cx="35%" cy="35%"><stop offset="0%" stop-color="#e6cd92"/><stop offset="100%" stop-color="#be9a44"/></radialGradient></defs><path d="M66 14a36 36 0 1 0 0 72 28 28 0 1 1 0-72z" fill="url(#mg)"/></svg>';
+
+function renderHome(){
+  const v=$('#v-home'); const events=genEvents(); const ss=seasons();
+  // today strip
+  const th=g2h(new Date());
+  $('#tmH').textContent=th.hd+' '+MH[th.hm-1];
+  $('#tmG').textContent=fmtGshort(new Date());
+  let html='<div class="stagger">';
+  html+=`<div class="daystrip">
+    <div class="weekday">${DG[new Date().getDay()]}</div>
+    <div class="hijri"><b>${th.hd}</b> ${MH[th.hm-1]} <b>${th.hy}</b></div>
+    <div class="greg">${esc(fmtGshort(new Date()))} M</div>
+  </div>`;
+
+  // confirmation banner
+  const pc=pendingConfirm();
+  if(pc){
+    html+=`<div class="banner" data-confirm="${pc.key}">
+      <div class="h">${esc(pc.nm)} \u2014 sekitar ${pc.dd} hari lagi</div>
+      <div class="p">Perkiraan algoritma: <b>${esc(fmtGshort(pc.est))}</b>. Bila pemerintah/otoritas tempatmu sudah menetapkan tanggal resmi, kunci tanggalnya agar seluruh momentum di bulan ini ikut tepat.</div>
+      <div class="row">
+        <button class="btn primary" data-lockset="${pc.key}">Konfirmasi tanggal</button>
+        <button class="btn ghost" data-dismiss="${pc.key}">Pakai perkiraan</button>
+      </div>
+    </div>`;
+  }
+
+  // hero
+  const hero=pickHero(events);
+  if(hero){
+    const wl=whenLabel(hero.date);
+    html+=`<div class="hero">${moonSVG}
+      <div class="kicker"><span class="dot"></span>${wl.now&&wl.n==='Hari'?'Sedang berlangsung':'Momentum terdekat'}</div>
+      <h2>${esc(hero.t)}</h2>
+      <div class="hdate">${hero.span?esc(hero.span):(hero.hijri?esc(fmtH(hero.hijri)):esc(recurDesc2(hero)))} \u00b7 ${esc(fmtGshort(hero.date))}</div>
+      <div class="count"><span class="num">${wl.now?wl.n:wl.n}</span><span class="lbl">${wl.now?(wl.u||''):wl.u}${hero.est?'  \u00b7  ':''}${hero.est?'<span class="tag est">perkiraan</span>':''}</span></div>
+      ${hero.ins?`<div class="insight">${esc(hero.ins)}</div>`:''}
+    </div>`;
+  }
+
+  // seasonal chips
+  if(ss.length){
+    html+='<div class="section-title">Suasana spiritual</div><div class="chips">';
+    ss.forEach((s,i)=> html+=`<div class="chip" data-season="${i}"><span class="ic">\u25c6</span>${esc(s.t)}</div>`);
+    html+='</div>';
+  }
+
+  // feed
+  const mode=S.settings.feedMode;
+  html+=`<div class="section-title">Momentum ibadah</div>
+    <div class="toggle">
+      <button data-mode="countdays" class="${mode==='countdays'?'on':''}">Hitung Mundur</button>
+      <button data-mode="category" class="${mode==='category'?'on':''}">Terkategori</button>
+    </div><div class="card" id="feed">${mode==='countdays'?feedCountdays(events):feedCategory(events)}</div>`;
+
+  html+='</div>';
+  v.innerHTML=html;
+  $('#fab').style.display='none';
+}
+function recurDesc2(e){ return e.recurDesc||''; }
+
+function pickHero(events){
+  const today=noon(new Date());
+  const todays=events.filter(e=>sameDay(e.date,today)).sort((a,b)=>prio(b)-prio(a));
+  if(todays.length) return todays[0];
+  const ann=events.filter(e=>e.cat==='annual'&&daysFromToday(e.date)>=0&&daysFromToday(e.date)<=60);
+  if(ann.length) return ann[0];
+  return events.find(e=>daysFromToday(e.date)>=0)||events[0];
+}
+
+function evtRow(e){
+  const wl=whenLabel(e.date);
+  const meta=[];
+  if(e.span) meta.push(esc(e.span));
+  else if(e.hijri) meta.push(esc(fmtH(e.hijri)));
+  if(e.recurDesc) meta.push(esc(e.recurDesc));
+  meta.push(esc(fmtGshort(e.date)));
+  return `<div class="evt" data-evt="${e.id}">
+    <div class="when ${wl.now?'now':''}"><div class="n">${wl.n}</div><div class="u">${wl.u}</div></div>
+    <div class="body">
+      <div class="t">${esc(e.t)} ${e.est?'<span class="tag est">perkiraan</span>':''}</div>
+      <div class="m"><span class="cat-dot cat-${e.cat}"></span>${meta.join(' \u00b7 ')}</div>
+      ${e.ins?`<div class="ins">${esc(e.ins)}${e.source==='user'?' <span class="link" data-edit="'+e.customId+'">Ubah catatan</span>':''}</div>`:''}
+    </div>
+  </div>`;
+}
+function feedCountdays(events){
+  const list=events.filter(e=>daysFromToday(e.date)>=0).slice(0,40);
+  if(!list.length) return emptyInline('Belum ada momentum dalam jangkauan.');
+  return list.map(evtRow).join('');
+}
+function feedCategory(events){
+  const up=events.filter(e=>daysFromToday(e.date)>=0);
+  const groups=[['weekly','Pekan ini'],['monthly','Bulan Hijriah ini'],['annual','Tahunan mendatang'],['user','Catatan pribadi']];
+  let h='';
+  for(const [c,label] of groups){
+    const g=up.filter(e=>e.cat===c).slice(0, c==='annual'?8:6);
+    if(!g.length) continue;
+    h+=`<div class="group-label">${label}</div>`+g.map(evtRow).join('');
+  }
+  return h||emptyInline('Belum ada momentum dalam jangkauan.');
+}
+function emptyInline(t){ return `<div style="text-align:center;color:var(--muted);padding:24px 8px;font-size:13px">${esc(t)}</div>`; }
+
+/* ---------- calendar ---------- */
+let calRef=null; // {hy,hm}
+function renderCal(){
+  const v=$('#v-cal');
+  if(!calRef){ const th=g2h(new Date()); calRef={hy:th.hy,hm:th.hm}; }
+  const {hy,hm}=calRef;
+  const first=h2g(hy,hm,1);
+  // determine month length: find day count by checking when month flips (29 or 30)
+  let len=29; for(let d=29;d<=30;d++){ const c=g2h(addDays(first,d-1)); if(c.hm===hm && c.hd===d) len=d; }
+  const startDow=noon(first).getDay();
+  const events=genEvents();
+  const evDays={}; events.forEach(e=>{ if(e.hijri&&e.hijri.hy===hy&&e.hijri.hm===hm) evDays[e.hijri.hd]=true; });
+  let cells='';
+  for(let i=0;i<startDow;i++){ const d=addDays(first,i-startDow); const c=g2h(d); cells+=`<div class="cell muted"><div class="hd">${c.hd}</div><div class="gd">${d.getDate()}/${d.getMonth()+1}</div></div>`; }
+  const today=noon(new Date());
+  for(let d=1;d<=len;d++){
+    const g=h2g(hy,hm,d); const isT=sameDay(g,today);
+    cells+=`<div class="cell ${isT?'today':''}" data-day="${d}"><div class="hd">${d}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div>${evDays[d]?'<span class="ev-dot"></span>':''}</div>`;
+  }
+  let html=`<div class="stagger">
+    <div class="card">
+      <div class="cal-head">
+        <div class="nav" data-cal="-1">\u2039</div>
+        <div class="title"><div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div></div>
+        <div class="nav" data-cal="1">\u203a</div>
+      </div>
+      <div class="cal-grid">${DGS.map(d=>`<div class="dow">${d}</div>`).join('')}${cells}</div>
+      ${isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:''}
+    </div>
+    <div class="cal-detail" id="calDetail"></div>
+  </div>`;
+  v.innerHTML=html;
+  $('#fab').style.display='none';
+  showCalDay(g2h(new Date()).hm===hm&&g2h(new Date()).hy===hy ? g2h(new Date()).hd : null);
+}
+function showCalDay(d){
+  const wrap=$('#calDetail'); if(!wrap) return;
+  const {hy,hm}=calRef;
+  if(!d){ wrap.innerHTML=`<div class="muted-note" style="text-align:center;padding:8px">Ketuk tanggal untuk melihat momentumnya.</div>`; return; }
+  const g=h2g(hy,hm,d);
+  const events=genEvents().filter(e=> e.hijri? (e.hijri.hy===hy&&e.hijri.hm===hm&&e.hijri.hd===d) : sameDay(e.date,g));
+  let h=`<div class="card"><div class="group-label" style="margin-top:0">${d} ${MH[hm-1]} ${hy} H</div>
+    <div class="muted-note" style="margin-bottom:6px">${esc(fmtG(g))} M</div>`;
+  h+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
+  h+='</div>';
+  wrap.innerHTML=h;
+}
+
+/* ---------- custom notes ---------- */
+function renderNotes(){
+  const v=$('#v-notes');
+  let h='<div class="stagger"><div class="section-title">Catatan pribadi</div>';
+  if(!S.custom.length){
+    h+=`<div class="empty">${moonSVGsmall()}<div class="t">Belum ada catatan</div>
+      <div class="d">Tambahkan pengingat pribadimu \u2014 sekali (mis. kajian tamu) atau berulang (mis. pengajian rutin pekanan).</div></div>`;
+  } else {
+    h+='<div class="card">';
+    S.custom.slice().sort((a,b)=>a.title.localeCompare(b.title)).forEach(c=>{
+      const occ=nextCustomOccurrence(c, noon(new Date()), addDays(new Date(),380));
+      h+=`<div class="evt" data-edit="${c.id}">
+        <div class="when"><div class="n" style="font-size:13px;line-height:1.2;padding-top:4px">${c.type==='once'?'1\u00d7':'\u21bb'}</div></div>
+        <div class="body"><div class="t">${esc(c.title)}</div>
+          <div class="m"><span class="cat-dot cat-user"></span>${esc(recurDesc(c))}${occ?' \u00b7 '+esc(fmtGshort(occ)):''}</div>
+          ${c.note?`<div class="m">${esc(c.note)}</div>`:''}
+        </div></div>`;
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  v.innerHTML=h;
+  $('#fab').style.display='grid';
+}
+function moonSVGsmall(){ return '<svg class="mn" viewBox="0 0 100 100"><path d="M66 14a36 36 0 1 0 0 72 28 28 0 1 1 0-72z" fill="#cba64e"/></svg>'; }
+
+/* ---------- settings ---------- */
+function renderSet(){
+  const v=$('#v-set'); const th=g2h(new Date()); const off=S.settings.dayOffset||0;
+  let h='<div class="stagger">';
+  // correction
+  h+=`<div class="section-title">Koreksi kalender</div>
+    <div class="card">
+      <div class="set-row">
+        <div class="l"><div class="t">Geser hari Hijriah</div>
+          <div class="d">Hari ini menurut HILAL: <b style="color:var(--gold-hi)">${th.hd} ${MH[th.hm-1]} ${th.hy}</b>. Jika berbeda dengan tanggal di tempatmu, geser \u00b1 hari.</div></div>
+        <div class="stepper"><button data-off="-1">\u2212</button><div class="v">${off>0?'+':''}${off}</div><button data-off="1">+</button></div>
+      </div>
+    </div>`;
+  // isbat locks
+  h+=`<div class="section-title">Tanggal penetapan</div>
+    <div class="card">
+      <div class="muted-note" style="margin-bottom:14px">Ramadhan, Idul Fitri, dan Idul Adha ditetapkan otoritas setempat \u2014 tak bisa dihitung pasti oleh algoritma. Kunci tanggal resminya di sini; seluruh momentum di bulan itu akan menyesuaikan. Cocok juga saat kamu sedang di luar negeri.</div>`;
+  for(let hy=th.hy; hy<=th.hy+1; hy++){
+    for(const lm of LOCK_MONTHS){
+      const key=hy+'-'+lm.hm; const locked=S.locks[key];
+      const est=addDays(h2gRaw(hy,lm.hm,1), -off);
+      h+=`<div class="lockcard">
+        <div class="top"><div><div class="nm">${esc(lm.nm)}</div>
+          <div class="st ${locked?'locked':'est'}">${locked?('\u2713 Terkunci: '+esc(fmtGshort(fromISO(locked)))):('Perkiraan: '+esc(fmtGshort(est)))} \u00b7 ${hy} H</div></div></div>
+        <div class="actions">
+          <button class="btn" data-lockset="${key}">${locked?'Ubah':'Kunci tanggal'}</button>
+          ${locked?`<button class="btn ghost" data-lockclear="${key}">Hapus kunci</button>`:''}
+        </div>
+      </div>`;
+    }
+  }
+  h+='</div>';
+  // app
+  h+=`<div class="section-title">Aplikasi</div><div class="card">
+    <div class="set-row"><div class="l"><div class="t">Pasang ke layar utama</div><div class="d" id="installDesc">Jadikan HILAL seperti aplikasi biasa.</div></div>
+      <button class="btn primary" id="installBtn" disabled>Pasang</button></div>
+    <div class="set-row"><div class="l"><div class="t">Simpan data permanen</div><div class="d" id="persistDesc">Mencegah browser menghapus datamu saat penyimpanan penuh.</div></div>
+      <button class="btn" id="persistBtn">Aktifkan</button></div>
+    <div class="set-row"><div class="l"><div class="t">Tentang & sumber tanggal</div><div class="d">Cara kerja & catatan akurasi.</div></div>
+      <button class="btn ghost" id="aboutBtn">Lihat</button></div>
+  </div>`;
+  h+='</div>';
+  v.innerHTML=h;
+  $('#fab').style.display='none';
+  refreshInstallUI(); refreshPersistUI();
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+const modal=$('#modal'), sheet=$('#sheet');
+function openSheet(html){ sheet.innerHTML='<div class="grab"></div>'+html; modal.classList.add('show'); }
+function closeSheet(){ modal.classList.remove('show'); }
+modal.addEventListener('click',e=>{ if(e.target.hasAttribute('data-close')) closeSheet(); });
+
+function customForm(existing){
+  const c=existing||{type:'once',title:'',note:'',date:toISO(new Date()),weekday:1,monthday:noon(new Date()).getDate()};
+  openSheet(`<h3>${existing?'Ubah':'Tambah'} catatan</h3>
+    <div class="field"><label>Judul</label><input type="text" id="f-title" value="${esc(c.title)}" placeholder="mis. Pengajian rutin / Ceramah tamu"/></div>
+    <div class="field"><label>Jenis</label>
+      <div class="seg" id="f-type">
+        <button data-t="once" class="${c.type==='once'?'on':''}">Sekali</button>
+        <button data-t="weekly" class="${c.type==='weekly'?'on':''}">Pekanan</button>
+        <button data-t="monthly" class="${c.type==='monthly'?'on':''}">Bulanan</button>
+      </div></div>
+    <div class="field" id="f-once" style="display:${c.type==='once'?'block':'none'}"><label>Tanggal</label><input type="date" id="f-date" value="${c.date||toISO(new Date())}"/></div>
+    <div class="field" id="f-weekly" style="display:${c.type==='weekly'?'block':'none'}"><label>Hari</label>
+      <select id="f-weekday">${DG.map((d,i)=>`<option value="${i}" ${c.weekday===i?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div class="field" id="f-monthly" style="display:${c.type==='monthly'?'block':'none'}"><label>Tanggal setiap bulan</label><input type="number" id="f-monthday" min="1" max="31" value="${c.monthday||1}"/></div>
+    <div class="field"><label>Catatan (opsional)</label><textarea id="f-note" placeholder="Detail singkat...">${esc(c.note||'')}</textarea></div>
+    <button class="btn primary block" id="f-save">${existing?'Simpan perubahan':'Tambah catatan'}</button>
+    ${existing?`<button class="btn ghost block" id="f-del" style="margin-top:9px;color:var(--danger)">Hapus catatan</button>`:''}`);
+  let type=c.type;
+  sheet.querySelectorAll('#f-type button').forEach(b=>b.onclick=()=>{
+    type=b.dataset.t; sheet.querySelectorAll('#f-type button').forEach(x=>x.classList.toggle('on',x===b));
+    $('#f-once').style.display=type==='once'?'block':'none';
+    $('#f-weekly').style.display=type==='weekly'?'block':'none';
+    $('#f-monthly').style.display=type==='monthly'?'block':'none';
+  });
+  $('#f-save').onclick=()=>{
+    const title=$('#f-title').value.trim(); if(!title){ toast('Judul belum diisi'); return; }
+    const obj={ id: existing?existing.id:('c'+Date.now()), type, title, note:$('#f-note').value.trim() };
+    if(type==='once') obj.date=$('#f-date').value;
+    if(type==='weekly') obj.weekday=+$('#f-weekday').value;
+    if(type==='monthly') obj.monthday=Math.min(31,Math.max(1,+$('#f-monthday').value||1));
+    if(existing){ const i=S.custom.findIndex(x=>x.id===existing.id); S.custom[i]=obj; } else S.custom.push(obj);
+    save(); closeSheet(); toast('Tersimpan'); render();
+  };
+  if(existing){ $('#f-del').onclick=()=>{ S.custom=S.custom.filter(x=>x.id!==existing.id); save(); closeSheet(); toast('Catatan dihapus'); render(); }; }
+}
+
+function lockForm(key){
+  const [hy,hm]=key.split('-').map(Number);
+  const nm=(LOCK_MONTHS.find(l=>l.hm===hm)||{nm:MH[hm-1]}).nm;
+  const est=addDays(h2gRaw(hy,hm,1), -(S.settings.dayOffset||0));
+  const cur=S.locks[key]||toISO(est);
+  openSheet(`<h3>Kunci ${esc(nm)}</h3>
+    <div class="muted-note" style="margin-bottom:14px">Pilih tanggal Masehi untuk <b>hari pertama ${esc(MH[hm-1])} ${hy} H</b> sesuai penetapan resmi yang kamu ikuti. Perkiraan algoritma: <b>${esc(fmtGshort(est))}</b>.</div>
+    <div class="field"><label>Tanggal 1 ${esc(MH[hm-1])}</label><input type="date" id="lk-date" value="${cur}"/></div>
+    <button class="btn primary block" id="lk-save">Kunci tanggal</button>`);
+  $('#lk-save').onclick=()=>{ S.locks[key]=$('#lk-date').value; delete S.dismissed['c'+key]; save(); closeSheet(); toast('Tanggal dikunci'); render(); };
+}
+
+function aboutSheet(){
+  openSheet(`<h3>Tentang HILAL</h3>
+    <div class="muted-note" style="line-height:1.65">
+      <p>HILAL adalah almanak ibadah yang kamu buka berkala untuk melihat momentum ibadah yang sedang berlangsung dan akan datang \u2014 puasa sunnah, Ayyamul Bidh, hari besar, dan suasana spiritual bulan Hijriah.</p>
+      <p><b style="color:var(--cream)">Sumber tanggal.</b> Tanggal Hijriah dihitung dengan kalender Umm al-Qura langsung di perangkatmu, sehingga jalan penuh tanpa internet. Untuk event rutin (Senin\u2013Kamis, Ayyamul Bidh, awal bulan) perhitungan ini akurat.</p>
+      <p><b style="color:var(--cream)">Mengapa ada "perkiraan".</b> Awal Ramadhan, Idul Fitri, dan Idul Adha ditetapkan otoritas (di Indonesia: sidang isbat) dan bisa berbeda \u00b11 hari dari perhitungan. Karena itu kamu yang memegang kendali: gunakan <b>Geser hari</b> untuk menyamakan tanggal harian, dan <b>Kunci tanggal penetapan</b> begitu tanggal resmi diumumkan. Tanpa server, tanpa bergantung satu negara \u2014 tetap akurat di mana pun kamu berada.</p>
+      <p style="color:var(--muted-2)">Data tersimpan hanya di perangkat ini.</p>
+    </div>
+    <button class="btn block" data-close style="margin-top:6px">Tutup</button>`);
+}
+
+/* ============================================================
+   TOAST + ROUTING
+   ============================================================ */
+let toastT;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+
+let tab='home';
+function go(t){ tab=t; document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('#v-'+t).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function render(){ if(tab==='home')renderHome(); else if(tab==='cal')renderCal(); else if(tab==='notes')renderNotes(); else renderSet(); }
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
+$('#fab').onclick=()=>customForm(null);
+
+/* ---------- delegated clicks ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-cal],[data-day],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],#installBtn,#persistBtn,#aboutBtn');
+  if(!t) return;
+  if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderHome(); return; }
+  if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
+  if(t.dataset.edit){ const c=S.custom.find(x=>x.id===t.dataset.edit); if(c) customForm(c); return; }
+  if(t.dataset.season!=null){ const s=seasons()[+t.dataset.season]; if(s){ openSheet(`<h3>${esc(s.t)}</h3><div class="muted-note" style="line-height:1.6">${esc(s.ins)}</div><button class="btn block" data-close style="margin-top:16px">Tutup</button>`);} return; }
+  if(t.dataset.cal){ calRef.hm+=+t.dataset.cal; if(calRef.hm>12){calRef.hm=1;calRef.hy++;} if(calRef.hm<1){calRef.hm=12;calRef.hy--;} renderCal(); return; }
+  if(t.dataset.day){ document.querySelectorAll('.cell').forEach(c=>c.classList.remove('sel')); t.classList.add('sel'); showCalDay(+t.dataset.day); return; }
+  if(t.dataset.off){ S.settings.dayOffset=Math.max(-3,Math.min(3,(S.settings.dayOffset||0)+ +t.dataset.off)); save(); renderSet(); return; }
+  if(t.dataset.lockset){ lockForm(t.dataset.lockset); return; }
+  if(t.dataset.lockclear){ delete S.locks[t.dataset.lockclear]; save(); toast('Kunci dihapus'); render(); return; }
+  if(t.dataset.dismiss){ S.dismissed['c'+t.dataset.dismiss]=true; save(); renderHome(); return; }
+  if(t.id==='installBtn'){ doInstall(); return; }
+  if(t.id==='persistBtn'){ doPersist(); return; }
+  if(t.id==='aboutBtn'){ aboutSheet(); return; }
+});
+
+/* ---------- install (PWA) ---------- */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; refreshInstallUI(); });
+function refreshInstallUI(){ const b=$('#installBtn'), d=$('#installDesc'); if(!b)return;
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+  if(standalone){ b.textContent='Terpasang'; b.disabled=true; if(d)d.textContent='HILAL sudah berjalan sebagai aplikasi.'; }
+  else if(deferredPrompt){ b.disabled=false; b.textContent='Pasang'; }
+  else { b.disabled=true; if(d)d.innerHTML='Buka menu browser \u2192 \u201cTambahkan ke Layar Utama\u201d.'; }
+}
+async function doInstall(){ if(!deferredPrompt)return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; refreshInstallUI(); }
+
+/* ---------- persistent storage ---------- */
+async function refreshPersistUI(){ const b=$('#persistBtn'), d=$('#persistDesc'); if(!b||!navigator.storage||!navigator.storage.persisted)return;
+  const p=await navigator.storage.persisted(); if(p){ b.textContent='Aktif'; b.disabled=true; if(d)d.textContent='Data terlindungi dari penghapusan otomatis.'; } }
+async function doPersist(){ if(!navigator.storage||!navigator.storage.persist){ toast('Tidak didukung browser ini'); return; }
+  const ok=await navigator.storage.persist(); toast(ok?'Penyimpanan permanen aktif':'Permintaan ditolak browser'); refreshPersistUI(); }
+
+/* ---------- service worker ---------- */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+
+/* ---------- boot ---------- */
+render();
+</script>
+</body>
+</html>

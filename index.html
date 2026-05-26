@@ -128,6 +128,11 @@ body::before{ /* faint star field */
   font-size:12.5px; letter-spacing:.04em; padding:9px 8px; border-radius:999px; cursor:pointer; }
 .toggle button.on{ background:linear-gradient(160deg,var(--emerald),#134537); color:var(--cream);
   box-shadow:0 4px 14px -6px rgba(0,0,0,.6); }
+.search{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
+  border-radius:13px; padding:0 13px; margin-bottom:12px; }
+.search svg{ width:17px; height:17px; flex:none; stroke:var(--muted); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.search input{ flex:1; min-width:0; border:none; background:none; color:var(--cream); font-family:var(--sans); font-size:14px; padding:12px 0; outline:none; }
+.search input::placeholder{ color:var(--muted-2); }
 .evt{ display:flex; gap:14px; padding:15px 4px; border-bottom:1px solid var(--line-soft); cursor:pointer; }
 .evt:last-child{ border-bottom:none; }
 .evt .when{ flex:none; width:58px; text-align:center; }
@@ -193,6 +198,10 @@ body::before{ /* faint star field */
   border:1px solid rgba(168,138,224,.3); border-radius:12px; padding:11px 13px; margin-bottom:12px; }
 .sacred-note.odd{ color:#efe6ff; border-color:rgba(196,166,244,.5); background:radial-gradient(140% 130% at 0% 0%,rgba(176,144,232,.26),rgba(96,70,150,.12)); }
 .sacred-note b{ color:var(--gold-hi); }
+.cell.forbidden::before{ content:""; position:absolute; top:5px; left:5px; width:5px; height:5px; border-radius:50%; background:var(--danger); }
+.cell.today.forbidden::before{ background:#7a2e12; }
+.forbidden-note{ font-size:12.5px; line-height:1.55; color:#e8b69e; background:rgba(201,138,106,.12);
+  border:1px solid rgba(201,138,106,.34); border-radius:12px; padding:11px 13px; margin-bottom:12px; }
 .cell.today{ background:linear-gradient(160deg,var(--gold-hi),var(--gold)); border-color:var(--gold-hi);
   box-shadow:0 2px 8px -4px rgba(203,166,78,.5); }
 .cell.today .hd{ color:#241d0c; font-weight:600; }
@@ -378,10 +387,10 @@ const ANNUAL = [
   {hm:8, hd:15, key:'nisfu',     t:"Nisfu Sya'ban",    ins:'Malam pertengahan Sya\u2019ban, sebagian memperbanyak ibadah sebagai persiapan Ramadhan.'},
   {hm:9, hd:1,  key:'ramadhan',  t:'Awal Ramadhan',    lock:true, ins:'Awal bulan puasa wajib. Tanggal pastinya ditetapkan melalui rukyat / penetapan resmi.'},
   {hm:9, hd:17, key:'nuzulul',   t:"Nuzulul Qur'an",   ins:'Diperingati sebagai waktu pertama turunnya Al-Qur\u2019an.'},
-  {hm:10,hd:1,  key:'idulfitri', t:'Idul Fitri',       lock:true, ins:'Hari raya setelah Ramadhan. Tanggalnya ditetapkan melalui penetapan resmi.'},
+  {hm:10,hd:1,  key:'idulfitri', t:'Idul Fitri',       lock:true, ins:'Hari raya setelah Ramadhan. Tanggalnya ditetapkan melalui penetapan resmi. Diharamkan berpuasa pada hari ini.'},
   {hm:12,hd:1,  key:'dzulhijjah',t:'Awal Dzulhijjah',  lock:true, ins:'Memulai sepuluh hari pertama Dzulhijjah yang utama untuk amal saleh.'},
   {hm:12,hd:9,  key:'arafah',    t:'Puasa Arafah',     ins:'Puasa sunnah utama bagi yang tidak sedang berhaji.'},
-  {hm:12,hd:10, key:'iduladha',  t:'Idul Adha',        ins:'Hari raya kurban, diikuti hari Tasyrik (11\u201313 Dzulhijjah).'},
+  {hm:12,hd:10, key:'iduladha',  t:'Idul Adha',        ins:'Hari raya kurban. Diharamkan berpuasa pada hari ini dan pada hari Tasyrik (11\u201313 Dzulhijjah).'},
 ];
 const LOCK_MONTHS = [ {hm:9,nm:'Awal Ramadhan'}, {hm:10,nm:'Idul Fitri (1 Syawal)'}, {hm:12,nm:'Awal Dzulhijjah'} ];
 const WEEKLY = [
@@ -419,16 +428,23 @@ function genEvents(){
     push({ id:'m1-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Awal '+MH[cm-1],
            ins:'Pergantian bulan Hijriah \u2014 momen memperbarui niat dan amalan.',
            date:d1, hijri:{hy:cy,hm:cm,hd:1} });
-    const d13=h2g(cy,cm,13);
-    push({ id:'ab-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Puasa Ayyamul Bidh',
-           ins:'Puasa tiga hari di pertengahan bulan (13, 14, 15) \u2014 "hari-hari putih".',
-           date:d13, hijri:{hy:cy,hm:cm,hd:13}, span:'13\u201315 '+MH[cm-1] });
+    const abDays=[13,14,15].filter(dd=> !fastingForbidden({hm:cm,hd:dd}));
+    if(abDays.length){
+      const abAnchor=h2g(cy,cm,abDays[0]);
+      const abSpan=(abDays.length===3?'13\u201315':abDays.join(', '))+' '+MH[cm-1];
+      const abIns=(cm===12)
+        ? 'Puasa "hari-hari putih". Di Dzulhijjah hanya 14\u201315, karena 13 termasuk hari Tasyrik yang diharamkan berpuasa.'
+        : 'Puasa tiga hari di pertengahan bulan (13, 14, 15) \u2014 "hari-hari putih".';
+      push({ id:'ab-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Puasa Ayyamul Bidh',
+             ins:abIns, date:abAnchor, hijri:{hy:cy,hm:cm,hd:abDays[0]}, span:abSpan });
+    }
     cm++; if(cm>12){cm=1;cy++;}
   }
-  // weekly: next occurrence of each within 9 days
+  // weekly: kejadian terdekat; puasa Senin/Kamis melompati hari yang diharamkan berpuasa
   for(const w of WEEKLY){
     let add=(w.wd - today.getDay()+7)%7;
-    const date=addDays(today,add);
+    let date=addDays(today,add);
+    if(w.wd===1 || w.wd===4){ let guard=0; while(fastingForbidden(g2h(date)) && guard<6){ date=addDays(date,7); guard++; } }
     push({ id:'w-'+w.wd, source:'system', cat:'weekly', t:w.t, ins:w.ins, date, weekly:true });
   }
   // custom
@@ -463,6 +479,8 @@ function prio(e){ return e.cat==='season'?5:e.cat==='annual'?4:e.cat==='monthly'
 
 /* ---------- seasonal contexts ---------- */
 function sacredClass(h){ if(h && h.hm===9 && h.hd>=21){ return (h.hd%2===1)?'sacred-odd':'sacred'; } return ''; }
+function fastingForbidden(h){ if(!h) return null; if(h.hm===10 && h.hd===1) return 'Idul Fitri'; if(h.hm===12 && h.hd===10) return 'Idul Adha'; if(h.hm===12 && h.hd>=11 && h.hd<=13) return 'Hari Tasyrik'; return null; }
+function cellClasses(h){ const a=[]; const s=sacredClass(h); if(s)a.push(s); if(fastingForbidden(h))a.push('forbidden'); return a.join(' '); }
 function seasons(){
   const th=g2h(new Date()); const out=[];
   if([1,7,11,12].includes(th.hm)) out.push({t:'Bulan Haram',ins:'Termasuk empat bulan yang dimuliakan: Dzulqa\u2019dah, Dzulhijjah, Muharram, dan Rajab.'});
@@ -499,6 +517,24 @@ function whenLabel(d){ const n=daysFromToday(d); if(n===0)return{n:'Hari',u:'ini
 
 const moonSVG='<svg class="moon" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="mg" cx="35%" cy="35%"><stop offset="0%" stop-color="#e6cd92"/><stop offset="100%" stop-color="#be9a44"/></radialGradient></defs><path d="M66 14a36 36 0 1 0 0 72 28 28 0 1 1 0-72z" fill="url(#mg)"/></svg>';
 
+let feedQuery='';
+function renderFeedArea(){
+  const area=$('#feedArea'); if(!area) return;
+  const events=genEvents();
+  const q=feedQuery.trim().toLowerCase();
+  if(q){
+    const res=events.filter(e=> daysFromToday(e.date)>=0 && (e.t||'').toLowerCase().includes(q));
+    area.innerHTML = res.length
+      ? `<div class="card">${res.map(evtRow).join('')}</div>`
+      : `<div class="card">${emptyInline('Tak ada momentum cocok dengan pencarianmu.')}</div>`;
+  } else {
+    const mode=S.settings.feedMode;
+    area.innerHTML=`<div class="toggle">
+        <button data-mode="countdays" class="${mode==='countdays'?'on':''}">Hitung Mundur</button>
+        <button data-mode="category" class="${mode==='category'?'on':''}">Terkategori</button>
+      </div><div class="card" id="feed">${mode==='countdays'?feedCountdays(events):feedCategory(events)}</div>`;
+  }
+}
 function renderHome(){
   const v=$('#v-home'); const events=genEvents(); const ss=seasons();
   // today strip
@@ -545,16 +581,16 @@ function renderHome(){
     html+='</div>';
   }
 
-  // feed
-  const mode=S.settings.feedMode;
+  // feed + pencarian
   html+=`<div class="section-title">Momentum ibadah</div>
-    <div class="toggle">
-      <button data-mode="countdays" class="${mode==='countdays'?'on':''}">Hitung Mundur</button>
-      <button data-mode="category" class="${mode==='category'?'on':''}">Terkategori</button>
-    </div><div class="card" id="feed">${mode==='countdays'?feedCountdays(events):feedCategory(events)}</div>`;
+    <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="feedSearch" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" placeholder="Cari momentum\u2026 (mis. Arafah, Senin)" value="${esc(feedQuery)}"/></div>
+    <div id="feedArea"></div>`;
 
   html+='</div>';
   v.innerHTML=html;
+  renderFeedArea();
+  const si=$('#feedSearch'); if(si) si.oninput=()=>{ feedQuery=si.value; renderFeedArea(); };
   $('#fab').style.display='none';
 }
 function recurDesc2(e){ return e.recurDesc||''; }
@@ -646,9 +682,9 @@ function calHijri(){
   const events=genEvents(); const today=noon(new Date());
   let cells='';
   for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow); const c=g2h(g);
-    cells+=`<div class="cell muted ${sacredClass(c)}" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
+    cells+=`<div class="cell muted ${cellClasses(c)}" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
   for(let d=1;d<=len;d++){ const g=h2g(hy,hm,d);
-    cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g)), sacredClass({hm,hd:d})); }
+    cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g)), cellClasses({hm,hd:d})); }
   return { title:`<div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div>`, cells,
     note: isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:'' };
 }
@@ -661,9 +697,9 @@ function calGreg(){
   const sub=(g)=>{ const h=g2h(g); return h.hd===1?MH[h.hm-1].slice(0,3):h.hd; };
   let cells='';
   for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow);
-    cells+=`<div class="cell muted ${sacredClass(g2h(g))}" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
+    cells+=`<div class="cell muted ${cellClasses(g2h(g))}" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
   for(let d=1;d<=len;d++){ const g=noon(new Date(gy,gm,d));
-    cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g)), sacredClass(g2h(g))); }
+    cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g)), cellClasses(g2h(g))); }
   return { title:`<div class="m">${MG[gm]}</div><div class="y">${gy} M</div>`, cells,
     note:`<div class="muted-note" style="margin-top:12px">Angka kecil = tanggal Hijriah; nama bulan muncul saat bulan Hijriah berganti.</div>` };
 }
@@ -678,6 +714,8 @@ function showCalDay(date){
     html+= odd
       ? `<div class="sacred-note odd">\u2726 <b>Malam ke-${h.hd}</b> \u2014 malam ganjil sepuluh hari terakhir yang diharap sebagai Lailatul Qadar. Perbanyak ibadah, doa, dan i\u2019tikaf.</div>`
       : `<div class="sacred-note">Bagian dari sepuluh malam terakhir Ramadhan \u2014 perbanyak ibadah dan i\u2019tikaf.</div>`; }
+  const ff=fastingForbidden(h);
+  if(ff) html+=`<div class="forbidden-note">\u2715 Diharamkan berpuasa pada hari ini \u2014 ${ff}.</div>`;
   html+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
   html+='</div>';
   wrap.innerHTML=html;
@@ -843,7 +881,7 @@ $('#fab').onclick=()=>customForm(null);
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],#installBtn,#persistBtn,#aboutBtn');
   if(!t) return;
-  if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderHome(); return; }
+  if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderFeedArea(); return; }
   if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
   if(t.dataset.edit){ const c=S.custom.find(x=>x.id===t.dataset.edit); if(c) customForm(c); return; }
   if(t.dataset.season!=null){ const s=seasons()[+t.dataset.season]; if(s){ openSheet(`<h3>${esc(s.t)}</h3><div class="muted-note" style="line-height:1.6">${esc(s.ins)}</div><button class="btn block" data-close style="margin-top:16px">Tutup</button>`);} return; }

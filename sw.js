@@ -2,11 +2,12 @@
    - Halaman (navigasi/HTML): network-first  -> selalu versi terbaru saat online,
      jatuh ke cache saat offline.
    - Aset statis (ikon/manifest): cache-first -> cepat & hemat.
+   - Instalasi tahan-banting: satu aset hilang TIDAK membatalkan SW
+     (pakai allSettled, bukan addAll yang semua-atau-gagal).
    Bump CACHE setiap rilis untuk membersihkan cache lama. */
-const CACHE = 'hilal-v4';
-const ASSETS = [
-  './',
-  './index.html',
+const CACHE = 'hilal-v6';
+const CORE  = ['./', './index.html'];
+const EXTRA = [
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
@@ -16,7 +17,12 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil((async () => {
+    const c = await caches.open(CACHE);
+    await Promise.allSettled(CORE.map((u) => c.add(u)));
+    await Promise.allSettled(EXTRA.map((u) => c.add(u)));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (e) => {
@@ -34,7 +40,6 @@ self.addEventListener('fetch', (e) => {
     (req.headers.get('accept') || '').includes('text/html');
 
   if (isHTML) {
-    // network-first untuk halaman
     e.respondWith(
       fetch(req)
         .then((res) => {
@@ -47,7 +52,6 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // cache-first untuk aset statis
   e.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;

@@ -161,10 +161,10 @@ body::before{ /* faint star field */
 
 /* ---------- calendar ---------- */
 .cal-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
-.cal-head .nav{ flex:0 0 44px; width:44px; height:44px; padding:0; border-radius:12px; border:1px solid var(--line);
+.cal-head .cal-nav{ flex:0 0 44px; width:44px; height:44px; padding:0; border-radius:12px; border:1px solid var(--line);
   background:var(--surface); color:var(--gold); font-size:24px; line-height:42px; text-align:center;
   cursor:pointer; -webkit-user-select:none; user-select:none; }
-.cal-head .nav:active{ background:var(--surface-3); }
+.cal-head .cal-nav:active{ background:var(--surface-3); }
 .cal-head .title{ flex:1 1 auto; min-width:0; text-align:center; font-family:var(--serif); }
 .cal-head .title .m{ font-size:20px; color:var(--cream); }
 .cal-head .title .y{ font-size:12px; color:var(--muted); letter-spacing:.1em; margin-top:2px; }
@@ -604,9 +604,9 @@ function renderCal(){
     </div>
     <div class="card">
       <div class="cal-head">
-        <button class="nav" data-cal="-1" aria-label="Bulan sebelumnya">\u2039</button>
+        <button class="cal-nav" data-cal="-1" aria-label="Bulan sebelumnya">\u2039</button>
         <div class="title">${body.title}</div>
-        <button class="nav" data-cal="1" aria-label="Bulan berikutnya">\u203a</button>
+        <button class="cal-nav" data-cal="1" aria-label="Bulan berikutnya">\u203a</button>
       </div>
       ${onToday?'':`<button class="btn ghost today-jump" data-caltoday="1">\u21ba  Kembali ke hari ini</button>`}
       <div class="cal-grid">${DGS.map(d=>`<div class="dow">${d}</div>`).join('')}${body.cells}</div>

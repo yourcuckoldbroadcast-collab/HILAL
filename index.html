@@ -160,24 +160,32 @@ body::before{ /* faint star field */
 .btn.block{ width:100%; }
 
 /* ---------- calendar ---------- */
-.cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-.cal-head .nav{ width:38px; height:38px; border-radius:11px; border:1px solid var(--line);
-  background:var(--surface); color:var(--gold); font-size:18px; display:grid; place-items:center; cursor:pointer; }
-.cal-head .title{ text-align:center; font-family:var(--serif); }
-.cal-head .title .m{ font-size:20px; color:var(--cream); }
+.cal-head{ display:grid; grid-template-columns:46px 1fr 46px; align-items:center; gap:8px; margin-bottom:8px; }
+.cal-head .nav{ width:46px; height:46px; border-radius:13px; border:1px solid var(--line);
+  background:var(--surface); color:var(--gold); font-size:22px; line-height:1; display:grid; place-items:center;
+  cursor:pointer; -webkit-user-select:none; user-select:none; }
+.cal-head .nav:active{ transform:scale(.94); background:var(--surface-3); }
+.cal-head .title{ text-align:center; font-family:var(--serif); min-width:0; }
+.cal-head .title .m{ font-size:21px; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cal-head .title .y{ font-size:12px; color:var(--muted); letter-spacing:.1em; margin-top:2px; }
+.today-jump{ width:100%; margin:6px 0 14px; font-size:12.5px; }
 .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
 .cal-grid .dow{ text-align:center; font-size:10px; letter-spacing:.06em; color:var(--muted);
   padding:4px 0 8px; text-transform:uppercase; }
 .cell{ aspect-ratio:1; border-radius:11px; border:1px solid transparent; display:flex; flex-direction:column;
-  align-items:center; justify-content:center; cursor:pointer; position:relative; background:rgba(255,255,255,.015); }
-.cell .hd{ font-family:var(--serif); font-size:16px; color:var(--cream); }
-.cell .gd{ font-size:8.5px; color:var(--muted-2); margin-top:1px; }
-.cell.muted{ opacity:.32; }
-.cell.today{ border-color:var(--gold); background:var(--gold-soft); }
-.cell.today .hd{ color:var(--gold-hi); }
+  align-items:center; justify-content:center; cursor:pointer; position:relative; background:rgba(255,255,255,.015); overflow:hidden; }
+.cell .hd{ font-family:var(--serif); font-size:16px; color:var(--cream); line-height:1; }
+.cell .gd{ font-size:8.5px; color:var(--muted-2); margin-top:2px; }
+.cell.muted{ opacity:.3; }
+.cell.muted .hd{ color:var(--muted); }
 .cell.sel{ background:linear-gradient(160deg,var(--emerald),#0e3a2d); border-color:var(--line); }
-.cell .ev-dot{ position:absolute; bottom:6px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
+.cell.today{ background:linear-gradient(160deg,var(--gold-hi),var(--gold)); border-color:var(--gold-hi);
+  box-shadow:0 6px 18px -7px rgba(203,166,78,.65); }
+.cell.today .hd{ color:#241d0c; font-weight:600; }
+.cell.today .gd{ color:#5c4a1c; }
+.cell .tnow{ font-size:7px; letter-spacing:.06em; text-transform:uppercase; color:#241d0c; font-weight:700; margin-top:2px; }
+.cell .ev-dot{ position:absolute; bottom:5px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
+.cell.muted .ev-dot{ opacity:.5; }
 .cal-detail{ margin-top:16px; }
 
 /* ---------- forms ---------- */
@@ -578,51 +586,80 @@ function feedCategory(events){
 function emptyInline(t){ return `<div style="text-align:center;color:var(--muted);padding:24px 8px;font-size:13px">${esc(t)}</div>`; }
 
 /* ---------- calendar ---------- */
-let calRef=null; // {hy,hm}
+let calMode='hijri';
+let calH=null; // {hy,hm}
+let calG=null; // {gy,gm} (gm 0-11)
+function initCalRefs(){ const th=g2h(new Date()); calH={hy:th.hy,hm:th.hm}; const t=noon(new Date()); calG={gy:t.getFullYear(),gm:t.getMonth()}; }
+function isCalToday(){ const t=noon(new Date()); if(calMode==='hijri'){ const th=g2h(new Date()); return calH.hy===th.hy&&calH.hm===th.hm; } return calG.gy===t.getFullYear()&&calG.gm===t.getMonth(); }
+
 function renderCal(){
   const v=$('#v-cal');
-  if(!calRef){ const th=g2h(new Date()); calRef={hy:th.hy,hm:th.hm}; }
-  const {hy,hm}=calRef;
-  const first=h2g(hy,hm,1);
-  // determine month length: find day count by checking when month flips (29 or 30)
-  let len=29; for(let d=29;d<=30;d++){ const c=g2h(addDays(first,d-1)); if(c.hm===hm && c.hd===d) len=d; }
-  const startDow=noon(first).getDay();
-  const events=genEvents();
-  const evDays={}; events.forEach(e=>{ if(e.hijri&&e.hijri.hy===hy&&e.hijri.hm===hm) evDays[e.hijri.hd]=true; });
-  let cells='';
-  for(let i=0;i<startDow;i++){ const d=addDays(first,i-startDow); const c=g2h(d); cells+=`<div class="cell muted"><div class="hd">${c.hd}</div><div class="gd">${d.getDate()}/${d.getMonth()+1}</div></div>`; }
-  const today=noon(new Date());
-  for(let d=1;d<=len;d++){
-    const g=h2g(hy,hm,d); const isT=sameDay(g,today);
-    cells+=`<div class="cell ${isT?'today':''}" data-day="${d}"><div class="hd">${d}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div>${evDays[d]?'<span class="ev-dot"></span>':''}</div>`;
-  }
-  let html=`<div class="stagger">
+  if(!calH) initCalRefs();
+  const onToday=isCalToday();
+  const body = calMode==='hijri' ? calHijri() : calGreg();
+  const html=`<div class="stagger">
+    <div class="toggle" style="margin-bottom:14px">
+      <button data-calmode="hijri" class="${calMode==='hijri'?'on':''}">Hijriah</button>
+      <button data-calmode="greg" class="${calMode==='greg'?'on':''}">Masehi</button>
+    </div>
     <div class="card">
       <div class="cal-head">
-        <div class="nav" data-cal="-1">\u2039</div>
-        <div class="title"><div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div></div>
-        <div class="nav" data-cal="1">\u203a</div>
+        <button class="nav" data-cal="-1" aria-label="Bulan sebelumnya">\u2039</button>
+        <div class="title">${body.title}</div>
+        <button class="nav" data-cal="1" aria-label="Bulan berikutnya">\u203a</button>
       </div>
-      <div class="cal-grid">${DGS.map(d=>`<div class="dow">${d}</div>`).join('')}${cells}</div>
-      ${isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:''}
+      ${onToday?'':`<button class="btn ghost today-jump" data-caltoday="1">\u21ba  Kembali ke hari ini</button>`}
+      <div class="cal-grid">${DGS.map(d=>`<div class="dow">${d}</div>`).join('')}${body.cells}</div>
+      ${body.note||''}
     </div>
     <div class="cal-detail" id="calDetail"></div>
   </div>`;
   v.innerHTML=html;
   $('#fab').style.display='none';
-  showCalDay(g2h(new Date()).hm===hm&&g2h(new Date()).hy===hy ? g2h(new Date()).hd : null);
+  showCalDay(onToday?noon(new Date()):null);
 }
-function showCalDay(d){
+function cellHTML(g, mainNum, subLabel, isT, hasEv){
+  return `<div class="cell ${isT?'today':''}" data-date="${toISO(g)}"><div class="hd">${mainNum}</div><div class="gd">${subLabel}</div>${isT?'<div class="tnow">Hari ini</div>':((hasEv)?'<span class="ev-dot"></span>':'')}</div>`;
+}
+function calHijri(){
+  const {hy,hm}=calH;
+  const first=h2g(hy,hm,1);
+  let len=29; for(let d=29;d<=30;d++){ const c=g2h(addDays(first,d-1)); if(c.hm===hm&&c.hd===d) len=d; }
+  const startDow=noon(first).getDay();
+  const events=genEvents(); const today=noon(new Date());
+  let cells='';
+  for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow); const c=g2h(g);
+    cells+=`<div class="cell muted" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
+  for(let d=1;d<=len;d++){ const g=h2g(hy,hm,d);
+    cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g))); }
+  return { title:`<div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div>`, cells,
+    note: isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:'' };
+}
+function calGreg(){
+  const {gy,gm}=calG;
+  const first=noon(new Date(gy,gm,1));
+  const len=new Date(gy,gm+1,0).getDate();
+  const startDow=first.getDay();
+  const events=genEvents(); const today=noon(new Date());
+  const sub=(g)=>{ const h=g2h(g); return h.hd===1?MH[h.hm-1].slice(0,3):h.hd; };
+  let cells='';
+  for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow);
+    cells+=`<div class="cell muted" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
+  for(let d=1;d<=len;d++){ const g=noon(new Date(gy,gm,d));
+    cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g))); }
+  return { title:`<div class="m">${MG[gm]}</div><div class="y">${gy} M</div>`, cells,
+    note:`<div class="muted-note" style="margin-top:12px">Angka kecil = tanggal Hijriah; nama bulan muncul saat bulan Hijriah berganti.</div>` };
+}
+function showCalDay(date){
   const wrap=$('#calDetail'); if(!wrap) return;
-  const {hy,hm}=calRef;
-  if(!d){ wrap.innerHTML=`<div class="muted-note" style="text-align:center;padding:8px">Ketuk tanggal untuk melihat momentumnya.</div>`; return; }
-  const g=h2g(hy,hm,d);
-  const events=genEvents().filter(e=> e.hijri? (e.hijri.hy===hy&&e.hijri.hm===hm&&e.hijri.hd===d) : sameDay(e.date,g));
-  let h=`<div class="card"><div class="group-label" style="margin-top:0">${d} ${MH[hm-1]} ${hy} H</div>
+  if(!date){ wrap.innerHTML=`<div class="muted-note" style="text-align:center;padding:8px">Ketuk tanggal untuk melihat momentumnya.</div>`; return; }
+  const g=noon(date); const h=g2h(g);
+  const events=genEvents().filter(e=> sameDay(e.date,g));
+  let html=`<div class="card"><div class="group-label" style="margin-top:0">${h.hd} ${MH[h.hm-1]} ${h.hy} H</div>
     <div class="muted-note" style="margin-bottom:6px">${esc(fmtG(g))} M</div>`;
-  h+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
-  h+='</div>';
-  wrap.innerHTML=h;
+  html+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
+  html+='</div>';
+  wrap.innerHTML=html;
 }
 
 /* ---------- custom notes ---------- */
@@ -783,14 +820,19 @@ $('#fab').onclick=()=>customForm(null);
 
 /* ---------- delegated clicks ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-cal],[data-day],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],#installBtn,#persistBtn,#aboutBtn');
+  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],#installBtn,#persistBtn,#aboutBtn');
   if(!t) return;
   if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderHome(); return; }
   if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
   if(t.dataset.edit){ const c=S.custom.find(x=>x.id===t.dataset.edit); if(c) customForm(c); return; }
   if(t.dataset.season!=null){ const s=seasons()[+t.dataset.season]; if(s){ openSheet(`<h3>${esc(s.t)}</h3><div class="muted-note" style="line-height:1.6">${esc(s.ins)}</div><button class="btn block" data-close style="margin-top:16px">Tutup</button>`);} return; }
-  if(t.dataset.cal){ calRef.hm+=+t.dataset.cal; if(calRef.hm>12){calRef.hm=1;calRef.hy++;} if(calRef.hm<1){calRef.hm=12;calRef.hy--;} renderCal(); return; }
-  if(t.dataset.day){ document.querySelectorAll('.cell').forEach(c=>c.classList.remove('sel')); t.classList.add('sel'); showCalDay(+t.dataset.day); return; }
+  if(t.dataset.calmode){ if(calMode!==t.dataset.calmode){ calMode=t.dataset.calmode; renderCal(); } return; }
+  if(t.dataset.caltoday){ initCalRefs(); renderCal(); return; }
+  if(t.dataset.cal){ const dir=+t.dataset.cal;
+    if(calMode==='hijri'){ calH.hm+=dir; if(calH.hm>12){calH.hm=1;calH.hy++;} if(calH.hm<1){calH.hm=12;calH.hy--;} }
+    else { calG.gm+=dir; if(calG.gm>11){calG.gm=0;calG.gy++;} if(calG.gm<0){calG.gm=11;calG.gy--;} }
+    renderCal(); return; }
+  if(t.dataset.date){ document.querySelectorAll('.cell').forEach(c=>c.classList.remove('sel')); t.classList.add('sel'); showCalDay(fromISO(t.dataset.date)); return; }
   if(t.dataset.off){ S.settings.dayOffset=Math.max(-3,Math.min(3,(S.settings.dayOffset||0)+ +t.dataset.off)); save(); renderSet(); return; }
   if(t.dataset.lockset){ lockForm(t.dataset.lockset); return; }
   if(t.dataset.lockclear){ delete S.locks[t.dataset.lockclear]; save(); toast('Kunci dihapus'); render(); return; }

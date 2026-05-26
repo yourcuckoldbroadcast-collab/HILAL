@@ -284,7 +284,63 @@ textarea{ resize:vertical; min-height:64px; }
   transition:opacity .25s, transform .25s; }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
 .link{ color:var(--gold); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-</style>
+/* ---------- profiling ---------- */
+.invite{ text-align:center; padding:18px 16px 6px; }
+.invite .em{ width:84px; height:84px; margin:6px auto 16px; }
+.invite h2{ font-family:var(--serif); font-size:24px; margin:0 0 10px; color:var(--cream); }
+.invite p{ font-size:13.5px; line-height:1.6; color:var(--cream-2); margin:0 auto 8px; max-width:330px; }
+.invite .muted-note{ max-width:330px; margin:6px auto 18px; }
+.crest{ position:relative; overflow:hidden; text-align:center; padding:26px 20px 22px;
+  background:radial-gradient(120% 120% at 50% -10%, var(--crest-glow,rgba(203,166,78,.22)), transparent 60%), linear-gradient(160deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); margin-bottom:14px; }
+.crest .em{ width:96px; height:96px; margin:0 auto 12px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+.crest .title-nm{ font-family:var(--serif); font-size:27px; color:var(--cream); line-height:1.1; }
+.crest .title-sub{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-top:5px; }
+.crest .rankpill{ display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:7px 15px; border-radius:999px;
+  border:1px solid var(--line); background:rgba(0,0,0,.2); font-family:var(--serif); font-size:14px; color:var(--rank-c,var(--gold-hi)); }
+.crest .rankpill .gem{ width:11px; height:11px; border-radius:2px; transform:rotate(45deg); background:var(--rank-c,var(--gold)); }
+.bar{ height:8px; border-radius:999px; background:rgba(0,0,0,.28); overflow:hidden; margin:10px 0 6px; }
+.bar > i{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--rank-c,var(--gold)),var(--gold-hi)); }
+.bar-meta{ display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }
+.quest{ display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--line-soft); }
+.quest:last-child{ border-bottom:none; }
+.quest .qx{ width:26px; height:26px; border-radius:8px; border:1px solid var(--line); flex:none; display:grid; place-items:center; font-size:14px; color:var(--muted); }
+.quest.done .qx{ background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; border-color:transparent; }
+.quest .qt{ flex:1; font-size:14px; color:var(--cream); }
+.quest.done .qt{ color:var(--muted); text-decoration:line-through; }
+.quest .qp{ font-size:11px; color:var(--gold); }
+.qnote{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.5; }
+.qnote.pen{ color:var(--danger); }
+.pie-wrap{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+.pie-wrap svg{ flex:none; }
+.legend{ flex:1; min-width:140px; display:flex; flex-direction:column; gap:7px; }
+.legend .lg{ display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--cream-2); }
+.legend .sw{ width:10px; height:10px; border-radius:3px; flex:none; }
+.legend .lv{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+.nudge{ font-size:13px; line-height:1.55; color:var(--cream-2); background:rgba(110,160,140,.1);
+  border:1px solid rgba(120,170,150,.22); border-radius:12px; padding:12px 14px; }
+.nudge b{ color:var(--gold-hi); }
+.arts{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.art{ text-align:center; }
+.art .em{ width:100%; aspect-ratio:1; }
+.art.locked .em{ filter:grayscale(1) brightness(.5); opacity:.4; }
+.art .an{ font-size:10px; color:var(--muted); margin-top:5px; line-height:1.2; }
+.art.unlocked .an{ color:var(--cream-2); }
+/* tracker controls */
+.trk{ display:inline-flex; gap:6px; margin-top:9px; }
+.trk button{ width:34px; height:30px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.18);
+  font-size:14px; cursor:pointer; color:var(--muted); display:grid; place-items:center; }
+.trk button.dn.on{ background:linear-gradient(160deg,#2e8b6f,#1c5e49); color:var(--cream); border-color:transparent; }
+.trk button.sk.on{ background:rgba(201,138,106,.22); color:var(--danger); border-color:rgba(201,138,106,.4); }
+.chk-cat{ font-size:11px; color:var(--muted); }
+.today-card .evt .body .t{ font-size:15px; }
+/* dev mode */
+.devlbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 8px; }
+.dev-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:7px; margin-bottom:4px; }
+.devbtn{ font-size:12px; padding:9px 6px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.18); color:var(--cream-2); cursor:pointer; }
+.devbtn:active{ background:rgba(255,255,255,.06); }
+#devScore{ background:rgba(0,0,0,.2); border:1px solid var(--line); border-radius:9px; color:var(--cream); padding:9px 11px; font-size:14px; }
+
 </head>
 <body>
 <div class="wrap">
@@ -296,7 +352,7 @@ textarea{ resize:vertical; min-height:64px; }
       </svg>
       <h1>HILAL</h1>
     </div>
-    <div class="today-mini">
+    <div class="today-mini" id="todayMini">
       <div class="h" id="tmH">—</div>
       <div class="g" id="tmG">—</div>
     </div>
@@ -308,6 +364,8 @@ textarea{ resize:vertical; min-height:64px; }
   <section class="view" id="v-cal"></section>
   <!-- CUSTOM -->
   <section class="view" id="v-notes"></section>
+  <!-- PROFIL -->
+  <section class="view" id="v-profil"></section>
   <!-- SETTINGS -->
   <section class="view" id="v-set"></section>
 </div>
@@ -321,6 +379,8 @@ textarea{ resize:vertical; min-height:64px; }
     <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg>Kalender</button>
   <button data-tab="notes">
     <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M9 8h4"/></svg>Catatan</button>
+  <button data-tab="profil">
+    <svg viewBox="0 0 24 24"><path d="M12 3.5l2.3 4.7 5.2.8-3.75 3.65.9 5.15L12 15.9l-4.65 2.45.9-5.15L4.5 9l5.2-.8z"/></svg>Profil</button>
   <button data-tab="set">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Atur</button>
 </div></nav>
@@ -343,9 +403,16 @@ const DGS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const MS = 86400000;
 
 /* ---------- state ---------- */
-const DEFAULT = { settings:{ dayOffset:0, feedMode:'countdays' }, locks:{}, custom:[], dismissed:{} };
+const DEFAULT = { settings:{ dayOffset:0, feedMode:'countdays' }, locks:{}, custom:[], dismissed:{},
+  profile:{ started:false, startedAt:null, track:{}, score:0,
+    title:{key:'truth',hy:null,hm:null}, artifacts:['truth'],
+    q:{ day:null, batch:[], batchN:1, doneToday:0, exhausted:false, maxedStreak:0, penaltyUntil:null, lastDone:null } } };
 let S = load();
-function load(){ try{ return Object.assign(JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(localStorage.getItem('hilal')||'{}')); }catch(e){ return JSON.parse(JSON.stringify(DEFAULT)); } }
+function load(){ let s; try{ s=Object.assign(JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(localStorage.getItem('hilal')||'{}')); }catch(e){ s=JSON.parse(JSON.stringify(DEFAULT)); }
+  s.profile=Object.assign(JSON.parse(JSON.stringify(DEFAULT.profile)), s.profile||{});
+  s.profile.q=Object.assign(JSON.parse(JSON.stringify(DEFAULT.profile.q)), s.profile.q||{});
+  s.profile.track=s.profile.track||{}; if(!Array.isArray(s.profile.artifacts)) s.profile.artifacts=['truth'];
+  return s; }
 function save(){ try{ localStorage.setItem('hilal', JSON.stringify(S)); }catch(e){} }
 
 /* ---------- hijri engine ---------- */
@@ -717,6 +784,13 @@ function showCalDay(date){
   const ff=fastingForbidden(h);
   if(ff) html+=`<div class="forbidden-note">\u2715 Diharamkan berpuasa pada hari ini \u2014 ${ff}.</div>`;
   html+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
+  if(S.profile.started){
+    const trk=trackablesOnDay(g); const past=noon(g)<=noon(new Date());
+    if(trk.length && past){
+      html+=`<div class="group-label">Tandai amalmu</div>`+
+        trk.map(it=>`<div class="evt" style="cursor:default"><div class="when"><div class="n" style="font-size:11px;line-height:1.2;padding-top:7px;color:var(--muted)">\u25cf</div></div><div class="body"><div class="t" style="font-size:15px">${esc(it.t)}</div>${trkControls(it)}</div></div>`).join('');
+    } else if(trk.length){ html+=`<div class="muted-note" style="margin-top:10px">Penanda amal aktif saat harinya tiba.</div>`; }
+  }
   html+='</div>';
   wrap.innerHTML=html;
 }
@@ -724,7 +798,15 @@ function showCalDay(date){
 /* ---------- custom notes ---------- */
 function renderNotes(){
   const v=$('#v-notes');
-  let h='<div class="stagger"><div class="section-title">Catatan pribadi</div>';
+  let h='<div class="stagger">';
+  if(S.profile.started){
+    const trk=trackablesOnDay(new Date());
+    h+='<div class="section-title">Amal hari ini</div>';
+    h+= trk.length
+      ? '<div class="card today-card">'+trk.map(it=>`<div class="evt" style="cursor:default"><div class="when"><div class="n" style="font-size:11px;line-height:1.2;padding-top:7px;color:var(--muted)">\u25cf</div></div><div class="body"><div class="t">${esc(it.t)}</div>${trkControls(it)}</div></div>`).join('')+'</div>'
+      : `<div class="card"><div class="muted-note">Tak ada amal terjadwal hari ini. Tambahkan ibadah rutin di bawah agar muncul di sini dan menjadi bagian perjalananmu.</div></div>`;
+  }
+  h+='<div class="section-title">Catatan pribadi</div>';
   if(!S.custom.length){
     h+=`<div class="empty">${moonSVGsmall()}<div class="t">Belum ada catatan</div>
       <div class="d">Tambahkan pengingat pribadimu \u2014 sekali (mis. kajian tamu) atau berulang (mis. pengajian rutin pekanan).</div></div>`;
@@ -789,9 +871,226 @@ function renderSet(){
       <button class="btn ghost" id="aboutBtn">Lihat</button></div>
   </div>`;
   h+='</div>';
+  if(S._dev) h+=devPanel();
   v.innerHTML=h;
   $('#fab').style.display='none';
   refreshInstallUI(); refreshPersistUI();
+}
+
+/* ============================================================
+   PROFILING (Fase 1)
+   ============================================================ */
+const CATS=[
+ {k:'puasa',  t:'Puasa Sunnah',       c:'#cba64e', title:'Silent Pilgrim'},
+ {k:'shalat', t:'Shalat Sunnah',      c:'#4a9d7a', title:'Veiled One'},
+ {k:'qiyamul',t:'Qiyamul Lail',       c:'#9d7ad4', title:'Dawn Sentinel'},
+ {k:'dzikir', t:'Dzikir Harian',      c:'#3a9ca8', title:'Soul Whisperer'},
+ {k:'tilawah',t:'Tilawah Al-Qur\u2019an', c:'#c98a5c', title:'Versekeeper'},
+ {k:'infaq',  t:'Infaq / Sedekah',    c:'#cf6f6f', title:'Lifegiver'},
+ {k:'majelis',t:'Majelis Ilmu',       c:'#8a9b5a', title:'Wisdom Seeker'},
+];
+const CATMAP=Object.fromEntries(CATS.map(c=>[c.k,c]));
+const TRUTH={k:'truth', t:'Awal langkah', c:'#b9a6df', title:'Truth Seeker'};
+const RANKS=[
+ {k:'ash',t:'Ash',min:0,c:'#8a8f88'},{k:'stone',t:'Stone',min:40,c:'#9a9488'},
+ {k:'bronze',t:'Bronze',min:100,c:'#b08d57'},{k:'silver',t:'Silver',min:200,c:'#c8ccd2'},
+ {k:'gold',t:'Gold',min:340,c:'#d9b441'},{k:'sapphire',t:'Sapphire',min:520,c:'#4f8fd6'},
+ {k:'emerald',t:'Emerald',min:760,c:'#2faa78'},{k:'obsidian',t:'Obsidian',min:1060,c:'#6b5fa0'},
+ {k:'ivory',t:'Ivory',min:1450,c:'#ece7d8'},{k:'celestial',t:'Celestial',min:2000,c:'#e6cd92'},
+];
+function rankIndex(s){ let i=0; for(let j=0;j<RANKS.length;j++) if(s>=RANKS[j].min) i=j; return i; }
+function rankOf(s){ return RANKS[rankIndex(s)]; }
+
+/* ---------- emblems (simbol benda mati, sesuai sunnah) ---------- */
+function emblemSym(key,col){
+  switch(key){
+    case 'puasa': return `<path d="M62 24a30 30 0 1 0 0 52 23 23 0 1 1 0-52z" fill="${col}"/>`;
+    case 'shalat': return `<path d="M34 80V54a16 16 0 0 1 32 0v26" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round"/><path d="M28 80h44" stroke="${col}" stroke-width="6" stroke-linecap="round"/>`;
+    case 'qiyamul': return `<rect x="40" y="34" width="20" height="34" rx="4" fill="none" stroke="${col}" stroke-width="5"/><path d="M44 26h12v8H44z" fill="${col}"/><path d="M40 68h20l4 8H36z" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><circle cx="50" cy="51" r="6" fill="${col}"/>`;
+    case 'dzikir': { let s=''; for(let i=0;i<9;i++){const a=-Math.PI/2+i*(Math.PI*2/9);s+=`<circle cx="${(50+27*Math.cos(a)).toFixed(1)}" cy="${(52+27*Math.sin(a)).toFixed(1)}" r="5" fill="${col}"/>`;} return s; }
+    case 'tilawah': return `<path d="M50 32c-7-5-17-6-24-3v40c7-3 17-2 24 3 7-5 17-6 24-3V29c-7-3-17-2-24 3z" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><path d="M50 32v40" stroke="${col}" stroke-width="4"/>`;
+    case 'infaq': return `<path d="M50 24c10 16 18 23 18 33a18 18 0 1 1-36 0c0-10 8-17 18-33z" fill="${col}"/>`;
+    case 'majelis': return `<path d="M32 34h30a6 6 0 0 1 6 6v36a7 7 0 0 0-6-4H32z" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><path d="M40 46h16M40 56h12" stroke="${col}" stroke-width="4" stroke-linecap="round"/>`;
+    default: { const pts=[]; for(let i=0;i<16;i++){const a=-Math.PI/2+i*Math.PI/8;const r=(i%2===0)?30:13;pts.push((50+r*Math.cos(a)).toFixed(1)+','+(50+r*Math.sin(a)).toFixed(1));} return `<polygon points="${pts.join(' ')}" fill="${col}"/>`; }
+  }
+}
+function emblem(key,cls){ const cat=key==='truth'?TRUTH:(CATMAP[key]||TRUTH); const col=cat.c;
+  return `<svg class="em ${cls||''}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="${col}22" stroke="${col}55" stroke-width="2"/>${emblemSym(key,col)}</svg>`; }
+
+/* ---------- quest engine ---------- */
+const OTHERS=['shalat','qiyamul','dzikir','tilawah','infaq','majelis'];
+function questRatio(idx){ if(idx<=2)return 0; if(idx<=5)return .25; if(idx<=7)return .5; return .75; }
+function daySeed(d,n){ let s=0; const str=d+'#'+n; for(let i=0;i<str.length;i++) s=(s*31+str.charCodeAt(i))>>>0; return s; }
+function sr(s){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }
+function questText(cat){ if(cat==='any')return{cat:'any',t:'Tunaikan satu amal apa pun hari ini'}; if(cat==='puasa')return{cat:'puasa',t:'Tunaikan puasa sunnah'}; return{cat,t:'Tunaikan ibadah '+(CATMAP[cat]?CATMAP[cat].t:cat)}; }
+function genQuestBatch(idx,seed){ const p=questRatio(idx); const b=[];
+  for(let i=0;i<2;i++){ const r=sr(seed+i*7); let cat;
+    if(r<p) cat=OTHERS[Math.floor(sr(seed+i*7+99)*OTHERS.length)];
+    else cat=(sr(seed+i*7+50)<.5)?'any':'puasa';
+    b.push(Object.assign(questText(cat),{done:false})); }
+  return b; }
+
+/* ---------- tracker ---------- */
+function occursOn(c,g){ g=noon(g);
+  if(c.type==='once') return c.date===toISO(g);
+  if(c.type==='weekly') return g.getDay()===c.weekday;
+  if(c.type==='monthly'){ const last=new Date(g.getFullYear(),g.getMonth()+1,0).getDate(); return g.getDate()===Math.min(c.monthday,last); }
+  return false; }
+function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.getDay(); const ff=fastingForbidden(h); const out=[];
+  const add=(id,cat,t)=>out.push({key:id+'@'+toISO(g),cat,t,day:toISO(g)});
+  if(!ff){ if(day===1)add('sys-senin','puasa','Puasa Senin'); if(day===4)add('sys-kamis','puasa','Puasa Kamis');
+    if([13,14,15].includes(h.hd)&&!(h.hm===12&&h.hd===13))add('sys-ab','puasa','Puasa Ayyamul Bidh');
+    if(h.hm===12&&h.hd===9)add('sys-arafah','puasa','Puasa Arafah');
+    if(h.hm===1&&h.hd===9)add('sys-tasua','puasa','Puasa Tasua'); if(h.hm===1&&h.hd===10)add('sys-asyura','puasa','Puasa Asyura'); }
+  for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g)}); }
+  return out; }
+function trkState(key){ const r=S.profile.track[key]; return r?r.s:null; }
+function setTrack(key,cat,dayISO,state){ const cur=trkState(key);
+  if(cur===state){ delete S.profile.track[key]; }
+  else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO); }
+  save(); }
+function questProgress(cat,dayISO){ if(!S.profile.started) return; if(dayISO!==toISO(new Date())) return;
+  profileSync(); const q=S.profile.q; let changed=false;
+  let target=q.batch.find(qq=>!qq.done&&qq.cat===cat) || q.batch.find(qq=>!qq.done&&qq.cat==='any');
+  if(target){ target.done=true; S.profile.score+=8; q.doneToday++; q.lastDone=toISO(new Date()); changed=true; }
+  if(changed && q.batch.every(x=>x.done)){ const maxB=q.penaltyUntil?1:3;
+    if(q.batchN<maxB){ q.batchN++; q.batch=genQuestBatch(rankIndex(S.profile.score),daySeed(toISO(new Date()),q.batchN)); }
+    else q.exhausted=true; } }
+
+/* ---------- daily + monthly sync ---------- */
+function profileSync(){ if(!S.profile.started) return; const today=toISO(new Date()); const q=S.profile.q;
+  if(q.day!==today){ const oldDay=q.day;
+    if(oldDay!==null){ if(q.exhausted) q.maxedStreak=(q.maxedStreak||0)+1; else q.maxedStreak=0;
+      if((q.maxedStreak||0)>=3 && !q.penaltyUntil) q.penaltyUntil=toISO(addDays(new Date(),7)); }
+    if(q.penaltyUntil && today>=q.penaltyUntil){ q.penaltyUntil=null; q.maxedStreak=0; }
+    let gap=oldDay?Math.round((fromISO(today)-fromISO(oldDay))/MS):0;
+    let idle=Math.max(0,gap-((q.doneToday>0)?1:0));
+    if(idle>0){ const dr=(rankIndex(S.profile.score)>=9?22:4); S.profile.score=Math.max(0,S.profile.score-dr*Math.min(idle,7)); }
+    q.day=today; q.doneToday=0; q.exhausted=false; q.batchN=1; q.batch=genQuestBatch(rankIndex(S.profile.score),daySeed(today,1)); }
+  titleSync(); save(); }
+function tallyCategories(days){ const cut=addDays(new Date(),-days); const t={};
+  for(const k in S.profile.track){ const r=S.profile.track[k]; if(r.s==='done'&&fromISO(r.d)>=cut) t[r.c]=(t[r.c]||0)+1; } return t; }
+function titleSync(){ if(!S.profile.started) return; const th=g2h(new Date()); const cur=S.profile.title;
+  if(cur&&cur.hy===th.hy&&cur.hm===th.hm) return;
+  const tally=tallyCategories(30); let max=0; for(const c of CATS){ const n=tally[c.k]||0; if(n>max)max=n; }
+  if(max===0){ S.profile.title={key:'truth',hy:th.hy,hm:th.hm}; return; }
+  const top=CATS.filter(c=>(tally[c.k]||0)===max).map(c=>c.k);
+  const dom=(cur&&top.includes(cur.key))?cur.key:top[0];
+  S.profile.title={key:dom,hy:th.hy,hm:th.hm};
+  if(!S.profile.artifacts.includes(dom)) S.profile.artifacts.push(dom);
+  S._titleRevealed=dom; }
+function startJourney(){ S.profile.started=true; S.profile.startedAt=toISO(new Date());
+  const th=g2h(new Date()); S.profile.title={key:'truth',hy:th.hy,hm:th.hm}; S.profile.q.day=null;
+  profileSync(); save(); renderProfil(); toast('Perjalananmu dimulai. Bismillah.'); }
+
+/* ---------- pie ---------- */
+function pieSVG(tally){ const entries=CATS.map(c=>({c,n:tally[c.k]||0})).filter(x=>x.n>0);
+  const total=entries.reduce((s,x)=>s+x.n,0); const R=58,cx=64,cy=64;
+  if(!total) return `<svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="${R}" fill="none" stroke="var(--line)" stroke-width="16"/></svg>`;
+  if(entries.length===1) return `<svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="${R}" fill="${entries[0].c.c}"/><circle cx="64" cy="64" r="26" fill="var(--bg)"/></svg>`;
+  let a=-Math.PI/2, paths='';
+  for(const e of entries){ const frac=e.n/total; const a2=a+frac*Math.PI*2; const large=frac>0.5?1:0;
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    paths+=`<path d="M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${e.c.c}"/>`; a=a2; }
+  return `<svg width="128" height="128" viewBox="0 0 128 128">${paths}<circle cx="${cx}" cy="${cy}" r="26" fill="var(--bg)"/></svg>`; }
+
+/* ---------- render Profil ---------- */
+function trkControls(item){ const st=trkState(item.key); const cat=CATMAP[item.cat]?CATMAP[item.cat].t:item.cat;
+  return `<div class="chk-cat">Kategori: ${esc(cat)}</div><div class="trk">
+    <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done">\u2713</button>
+    <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip">\u2715</button></div>`; }
+function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
+  if(!S.profile.started){
+    v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
+      <div class="card"><div class="invite">${emblem('truth')}
+        <h2>Mulai perjalanan spiritualmu</h2>
+        <p>Lacak amal harianmu, temukan ibadah yang paling hidup dalam dirimu, dan bergeraklah maju sedikit demi sedikit menuju makna keikhlasan.</p>
+        <div class="muted-note">Profil dihitung diam-diam dari amal yang kamu centang. Title disematkan tiap awal bulan Hijriah \u2014 tak perlu dicek tiap hari. Semua privat, hanya di perangkatmu.</div>
+        <button class="btn primary block" data-questbegin="1">Quest Begin \u2014 mulai bulan ini</button>
+        <button class="btn ghost block" data-goto="home" style="margin-top:9px">Nanti saja</button>
+      </div></div></div>`; return; }
+  profileSync();
+  const p=S.profile, score=p.score, rk=rankOf(score), ri=rankIndex(score), next=RANKS[Math.min(ri+1,RANKS.length-1)];
+  const lo=rk.min, hi=next.min, pct=hi>lo?Math.min(100,Math.round((score-lo)/(hi-lo)*100)):100;
+  const tc=p.title.key==='truth'?TRUTH:(CATMAP[p.title.key]||TRUTH);
+  const tally=tallyCategories(30); const q=p.q, maxB=q.penaltyUntil?1:3;
+  const questHTML=q.batch.map(qq=>`<div class="quest ${qq.done?'done':''}"><div class="qx">${qq.done?'\u2713':''}</div><div class="qt">${esc(qq.t)}</div>${qq.done?'<div class="qp">+8</div>':''}</div>`).join('');
+  const qnote=q.penaltyUntil
+    ? `<div class="qnote pen">Mode jeda aktif \u2014 hanya 1 batch/hari hingga ${esc(fmtGshort(fromISO(q.penaltyUntil)))}. Istirahatkan langkahmu; ibadah bukan perlombaan.</div>`
+    : `<div class="qnote">Batch ${q.batchN} dari ${maxB}. ${q.exhausted?'Quest hari ini sudah penuh \u2014 lanjut esok.':'Selesaikan untuk membuka batch berikutnya.'}</div>`;
+  const ent=CATS.map(c=>({c,n:tally[c.k]||0})); const total=ent.reduce((s,x)=>s+x.n,0);
+  const legend=ent.filter(x=>x.n>0).sort((a,b)=>b.n-a.n).map(x=>`<div class="lg"><span class="sw" style="background:${x.c.c}"></span>${esc(x.c.t)}<span class="lv">${x.n}</span></div>`).join('')||`<div class="muted-note">Belum ada amal tercatat. Centang ibadahmu di Catatan atau Kalender.</div>`;
+  let nudge=''; if(total>0){ const weak=ent.slice().sort((a,b)=>a.n-b.n)[0]; nudge=`<div class="nudge">Area yang bisa kamu kuatkan: <b>${esc(weak.c.t)}</b>. Coba jadwalkan satu di tab Catatan.</div>`; }
+  const arts=[{k:'truth'}].concat(CATS.map(c=>({k:c.k}))).map(a=>{ const un=p.artifacts.includes(a.k); const cat=a.k==='truth'?TRUTH:CATMAP[a.k];
+    return `<div class="art ${un?'unlocked':'locked'}">${emblem(a.k)}<div class="an">${un?esc(cat.title):'???'}</div></div>`; }).join('');
+  v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
+    <div class="crest" style="--crest-glow:${tc.c}33;--rank-c:${rk.c}">${emblem(p.title.key)}
+      <div class="title-nm">${esc(tc.title)}</div>
+      <div class="title-sub">${p.title.key==='truth'?'Pencari yang sedang meniti':esc(tc.t)}</div>
+      <div class="rankpill"><span class="gem"></span>${esc(rk.t)} Rank</div></div>
+    <div class="card">
+      <div class="set-row" style="padding-top:0;border-bottom:none"><div class="l"><div class="t">Peringkat</div><div class="d">Skor ${score} \u00b7 ${ri<9?('menuju '+esc(next.t)):'puncak tertinggi'}</div></div></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="bar-meta"><span>${esc(rk.t)}</span><span>${ri<9?esc(next.t)+' \u00b7 '+hi:'Celestial'}</span></div></div>
+    <div class="section-title">Quest harian</div>
+    <div class="card">${questHTML}${qnote}</div>
+    <div class="section-title">Komposisi amal (30 hari)</div>
+    <div class="card"><div class="pie-wrap">${pieSVG(tally)}<div class="legend">${legend}</div></div>${nudge?('<div style="margin-top:14px">'+nudge+'</div>'):''}</div>
+    <div class="section-title">Koleksi artefak</div>
+    <div class="card"><div class="arts">${arts}</div>
+      <div class="muted-note" style="margin-top:12px">Artefak terbuka saat sebuah ibadah menjadi paling dominan di akhir bulan Hijriah, dan menjadi milikmu selamanya.</div></div></div>`;
+  if(S._titleRevealed){ const tt=S._titleRevealed==='truth'?TRUTH:CATMAP[S._titleRevealed]; if(tt) toast('Title bulan ini: '+tt.title); S._titleRevealed=null; }
+}
+
+/* ---------- dev mode (pengujian) ---------- */
+function seedDummy(){ const P=S.profile; const mix=['tilawah','tilawah','tilawah','dzikir','dzikir','puasa','shalat','infaq','majelis','qiyamul','tilawah','dzikir'];
+  for(let i=0;i<mix.length;i++){ P.track['seed-'+i]={s:'done',c:mix[i],d:toISO(addDays(new Date(),-(i+1)))}; } }
+function devAction(cmd){ const P=S.profile; const today=toISO(new Date()); const th=g2h(new Date());
+  const i=cmd.indexOf(':'); const g=i<0?cmd:cmd.slice(0,i); const a=i<0?'':cmd.slice(i+1);
+  if(g==='devoff'){ S._dev=false; save(); toast('Mode pengembang ditutup'); render(); return; }
+  if(g==='start'){ P.started=true; P.startedAt=today; P.title={key:'truth',hy:th.hy,hm:th.hm}; P.q.day=null; profileSync(); save(); toast('Profiling diaktifkan'); render(); return; }
+  if(g==='rank'){ P.score=(RANKS.find(x=>x.k===a)||RANKS[0]).min; }
+  else if(g==='score'){ P.score=Math.max(0,P.score+(parseInt(a,10)||0)); }
+  else if(g==='setscore'){ const el=document.getElementById('devScore'); P.score=Math.max(0,parseInt(el&&el.value,10)||0); }
+  else if(g==='title'){ P.title={key:a,hy:th.hy,hm:th.hm}; if(a!=='truth'&&!P.artifacts.includes(a)) P.artifacts.push(a); }
+  else if(g==='sync'){ if(a==='day'){ P.q.day=toISO(addDays(new Date(),-1)); P.q.doneToday=0; profileSync(); }
+    else if(a==='title'){ P.title={key:P.title.key,hy:null,hm:null}; titleSync(); } }
+  else if(g==='quest'){ const q=P.q;
+    if(a==='fill'){ q.batch.forEach(x=>{ if(!x.done){ x.done=true; P.score+=8; q.doneToday++; q.lastDone=today; } });
+      const maxB=q.penaltyUntil?1:3; if(q.batchN<maxB){ q.batchN++; q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,q.batchN)); } else q.exhausted=true; }
+    else if(a==='reset'){ q.batchN=1; q.exhausted=false; q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,1)); } }
+  else if(g==='penalty'){ if(a==='on'){ P.q.maxedStreak=3; P.q.penaltyUntil=toISO(addDays(new Date(),7)); P.q.batchN=1; P.q.exhausted=false; P.q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,1)); } else { P.q.penaltyUntil=null; P.q.maxedStreak=0; } }
+  else if(g==='unlockall'){ P.artifacts=['truth'].concat(CATS.map(c=>c.k)); }
+  else if(g==='seed'){ seedDummy(); }
+  else if(g==='reset'){ if(a==='soft'){ P.track={}; P.score=0; P.title={key:'truth',hy:th.hy,hm:th.hm}; P.artifacts=['truth'];
+      P.q={day:null,batch:[],batchN:1,doneToday:0,exhausted:false,maxedStreak:0,penaltyUntil:null,lastDone:null}; profileSync(); }
+    else { P.started=false; } }
+  save(); toast('Dev: '+cmd); render();
+}
+function devPanel(){ const P=S.profile;
+  if(!P.started) return `<div class="section-title" style="color:var(--danger)">Mode pengembang</div>
+    <div class="card"><div class="muted-note" style="margin-bottom:12px">Profiling belum aktif. Paksa mulai untuk menguji, atau gunakan Quest Begin di tab Profil.</div>
+    <button class="btn block" data-dev="start">Paksa mulai (Quest Begin)</button>
+    <button class="btn ghost block" data-dev="devoff" style="margin-top:9px">Tutup mode pengembang</button></div>`;
+  const rk=rankOf(P.score), ri=rankIndex(P.score), tc=P.title.key==='truth'?TRUTH:(CATMAP[P.title.key]||TRUTH);
+  const ro=(k,v)=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:var(--muted)">${k}</span><span style="color:var(--cream-2)">${esc(String(v))}</span></div>`;
+  const rankBtns=RANKS.map(r=>`<button class="devbtn" data-dev="rank:${r.k}">${r.t}</button>`).join('');
+  const titleBtns=[{k:'truth',t:'Truth'}].concat(CATS.map(c=>({k:c.k,t:c.title.split(' ')[0]}))).map(x=>`<button class="devbtn" data-dev="title:${x.k}">${esc(x.t)}</button>`).join('');
+  return `<div class="section-title" style="color:var(--danger)">Mode pengembang</div>
+    <div class="card">
+      ${ro('Skor',P.score)}${ro('Rank',rk.t+' (idx '+ri+')')}${ro('Title',tc.title)}${ro('Quest custom',(questRatio(ri)*100)+'%')}
+      ${ro('Batch',P.q.batchN+'/'+(P.q.penaltyUntil?1:3)+(P.q.exhausted?' penuh':''))}${ro('Penalti',P.q.penaltyUntil?('s/d '+P.q.penaltyUntil):'tidak')}${ro('maxedStreak',P.q.maxedStreak||0)}${ro('Artefak',P.artifacts.length+'/8')}${ro('Track',Object.keys(P.track).length)}
+      <div class="devlbl">Lompat ke rank</div><div class="dev-grid">${rankBtns}</div>
+      <div class="devlbl">Lompat ke title</div><div class="dev-grid">${titleBtns}</div>
+      <div class="devlbl">Skor manual</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="number" id="devScore" value="${P.score}" style="flex:1"/><button class="devbtn" data-dev="setscore" style="flex:none;padding:9px 16px">Set</button></div>
+      <div class="dev-grid"><button class="devbtn" data-dev="score:50">+50</button><button class="devbtn" data-dev="score:200">+200</button><button class="devbtn" data-dev="score:-50">\u221250</button><button class="devbtn" data-dev="score:-200">\u2212200</button></div>
+      <div class="devlbl">Sinkronisasi & quest</div>
+      <div class="dev-grid"><button class="devbtn" data-dev="sync:day">Force hari+1</button><button class="devbtn" data-dev="sync:title">Force title</button><button class="devbtn" data-dev="quest:fill">Selesaikan batch</button><button class="devbtn" data-dev="quest:reset">Reset quest</button><button class="devbtn" data-dev="penalty:on">Picu penalti</button><button class="devbtn" data-dev="penalty:off">Hapus penalti</button></div>
+      <div class="devlbl">Data & reset</div>
+      <div class="dev-grid"><button class="devbtn" data-dev="seed">Isi data contoh</button><button class="devbtn" data-dev="unlockall">Buka semua artefak</button><button class="devbtn" data-dev="reset:soft">Reset profil</button><button class="devbtn" data-dev="reset:off">Matikan profiling</button></div>
+      <button class="btn ghost block" data-dev="devoff" style="margin-top:12px">Tutup mode pengembang</button>
+    </div>`;
 }
 
 /* ============================================================
@@ -803,7 +1102,7 @@ function closeSheet(){ modal.classList.remove('show'); }
 modal.addEventListener('click',e=>{ if(e.target.hasAttribute('data-close')) closeSheet(); });
 
 function customForm(existing){
-  const c=existing||{type:'once',title:'',note:'',date:toISO(new Date()),weekday:1,monthday:noon(new Date()).getDate()};
+  const c=existing||{type:'once',title:'',note:'',date:toISO(new Date()),weekday:1,monthday:noon(new Date()).getDate(),category:'dzikir'};
   openSheet(`<h3>${existing?'Ubah':'Tambah'} catatan</h3>
     <div class="field"><label>Judul</label><input type="text" id="f-title" value="${esc(c.title)}" placeholder="mis. Pengajian rutin / Ceramah tamu"/></div>
     <div class="field"><label>Jenis</label>
@@ -812,6 +1111,8 @@ function customForm(existing){
         <button data-t="weekly" class="${c.type==='weekly'?'on':''}">Pekanan</button>
         <button data-t="monthly" class="${c.type==='monthly'?'on':''}">Bulanan</button>
       </div></div>
+    <div class="field"><label>Kategori ibadah</label>
+      <select id="f-cat">${CATS.map(x=>`<option value="${x.k}" ${(c.category||'dzikir')===x.k?'selected':''}>${esc(x.t)}</option>`).join('')}</select></div>
     <div class="field" id="f-once" style="display:${c.type==='once'?'block':'none'}"><label>Tanggal</label><input type="date" id="f-date" value="${c.date||toISO(new Date())}"/></div>
     <div class="field" id="f-weekly" style="display:${c.type==='weekly'?'block':'none'}"><label>Hari</label>
       <select id="f-weekday">${DG.map((d,i)=>`<option value="${i}" ${c.weekday===i?'selected':''}>${d}</option>`).join('')}</select></div>
@@ -828,7 +1129,7 @@ function customForm(existing){
   });
   $('#f-save').onclick=()=>{
     const title=$('#f-title').value.trim(); if(!title){ toast('Judul belum diisi'); return; }
-    const obj={ id: existing?existing.id:('c'+Date.now()), type, title, note:$('#f-note').value.trim() };
+    const obj={ id: existing?existing.id:('c'+Date.now()), type, title, note:$('#f-note').value.trim(), category:$('#f-cat').value };
     if(type==='once') obj.date=$('#f-date').value;
     if(type==='weekly') obj.weekday=+$('#f-weekday').value;
     if(type==='monthly') obj.monthday=Math.min(31,Math.max(1,+$('#f-monthday').value||1));
@@ -872,14 +1173,14 @@ function go(t){ tab=t; document.querySelectorAll('.view').forEach(v=>v.classList
   $('#v-'+t).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   render(); window.scrollTo({top:0,behavior:'smooth'}); }
-function render(){ if(tab==='home')renderHome(); else if(tab==='cal')renderCal(); else if(tab==='notes')renderNotes(); else renderSet(); }
+function render(){ if(tab==='home')renderHome(); else if(tab==='cal')renderCal(); else if(tab==='notes')renderNotes(); else if(tab==='profil')renderProfil(); else renderSet(); }
 
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 $('#fab').onclick=()=>customForm(null);
 
 /* ---------- delegated clicks ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],#installBtn,#persistBtn,#aboutBtn');
+  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],[data-questbegin],[data-goto],[data-track],[data-dev],#installBtn,#persistBtn,#aboutBtn');
   if(!t) return;
   if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderFeedArea(); return; }
   if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
@@ -899,6 +1200,11 @@ document.addEventListener('click',e=>{
   if(t.id==='installBtn'){ doInstall(); return; }
   if(t.id==='persistBtn'){ doPersist(); return; }
   if(t.id==='aboutBtn'){ aboutSheet(); return; }
+  if(t.dataset.questbegin){ startJourney(); return; }
+  if(t.dataset.goto){ go(t.dataset.goto); return; }
+  if(t.dataset.track){ setTrack(t.dataset.track,t.dataset.trackcat,t.dataset.trackday,t.dataset.trackstate);
+    if(tab==='cal') showCalDay(fromISO(t.dataset.trackday)); else render(); return; }
+  if(t.dataset.dev){ devAction(t.dataset.dev); return; }
 });
 
 /* ---------- install (PWA) ---------- */
@@ -922,6 +1228,10 @@ async function doPersist(){ if(!navigator.storage||!navigator.storage.persist){ 
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
 
 /* ---------- boot ---------- */
+(function(){ const el=$('#todayMini'); if(!el) return; let n=0,t0=0;
+  el.addEventListener('click',()=>{ const now=Date.now(); if(now-t0>1500)n=0; t0=now; n++;
+    if(n>=7){ n=0; S._dev=!S._dev; save(); toast(S._dev?'Mode pengembang aktif':'Mode pengembang nonaktif'); if(tab==='set')renderSet(); } }); })();
+if(S.profile.started) profileSync();
 render();
 </script>
 </body>

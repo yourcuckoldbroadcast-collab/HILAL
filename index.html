@@ -179,10 +179,26 @@ body::before{ /* faint star field */
 .cell.muted{ opacity:.3; }
 .cell.muted .hd{ color:var(--muted); }
 .cell.sel{ background:linear-gradient(160deg,var(--emerald),#0e3a2d); border-color:var(--line); }
+.cell.sacred{ background:linear-gradient(160deg,rgba(150,118,214,.16),rgba(108,84,160,.08)); border-color:rgba(168,138,224,.30); }
+.cell.sacred .hd{ color:#d9c8f5; }
+.cell.sacred .gd{ color:#9f8fc8; }
+.cell.sacred-odd{ background:radial-gradient(125% 120% at 50% 18%,rgba(176,144,232,.40),rgba(96,70,150,.20)); border-color:rgba(196,166,244,.55);
+  box-shadow:0 0 18px -5px rgba(150,112,222,.55), inset 0 0 0 1px rgba(206,178,248,.16); }
+.cell.sacred-odd .hd{ color:#f1e8ff; font-weight:600; }
+.cell.sacred-odd .gd{ color:#c3b2e8; }
+.cell.sacred-odd::after{ content:"\2726"; position:absolute; top:3px; right:5px; font-size:8px; line-height:1; color:var(--gold-hi); opacity:.9; }
+.chip.sacred{ border-color:rgba(190,162,240,.42); background:rgba(150,118,214,.14); color:#e7dcfa; }
+.chip.sacred .ic{ color:#c4a8f0; }
+.sacred-note{ font-size:12.5px; line-height:1.55; color:#cdbdf0; background:linear-gradient(160deg,rgba(150,118,214,.16),rgba(108,84,160,.08));
+  border:1px solid rgba(168,138,224,.3); border-radius:12px; padding:11px 13px; margin-bottom:12px; }
+.sacred-note.odd{ color:#efe6ff; border-color:rgba(196,166,244,.5); background:radial-gradient(140% 130% at 0% 0%,rgba(176,144,232,.26),rgba(96,70,150,.12)); }
+.sacred-note b{ color:var(--gold-hi); }
 .cell.today{ background:linear-gradient(160deg,var(--gold-hi),var(--gold)); border-color:var(--gold-hi);
   box-shadow:0 2px 8px -4px rgba(203,166,78,.5); }
 .cell.today .hd{ color:#241d0c; font-weight:600; }
 .cell.today .gd{ color:#5c4a1c; }
+.cell.today::after{ content:none; }
+.cell.today.sacred-odd{ box-shadow:0 2px 8px -4px rgba(203,166,78,.5), 0 0 0 2px rgba(190,158,238,.6); }
 .cell .ev-dot{ position:absolute; bottom:5px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
 .cell.today .ev-dot{ background:#241d0c; }
 .cell.muted .ev-dot{ opacity:.5; }
@@ -446,11 +462,12 @@ function recurDesc(c){
 function prio(e){ return e.cat==='season'?5:e.cat==='annual'?4:e.cat==='monthly'?2:e.cat==='user'?3:1; }
 
 /* ---------- seasonal contexts ---------- */
+function sacredClass(h){ if(h && h.hm===9 && h.hd>=21){ return (h.hd%2===1)?'sacred-odd':'sacred'; } return ''; }
 function seasons(){
   const th=g2h(new Date()); const out=[];
   if([1,7,11,12].includes(th.hm)) out.push({t:'Bulan Haram',ins:'Termasuk empat bulan yang dimuliakan: Dzulqa\u2019dah, Dzulhijjah, Muharram, dan Rajab.'});
   if(th.hm===12 && th.hd<=10) out.push({t:'10 Hari Pertama Dzulhijjah',ins:'Hari-hari yang utama untuk memperbanyak amal saleh.'});
-  if(th.hm===9 && th.hd>=21) out.push({t:'Sepuluh Malam Terakhir Ramadhan',ins:'Dianjurkan i\u2019tikaf dan memperbanyak ibadah; di dalamnya terdapat Lailatul Qadar.'});
+  if(th.hm===9 && th.hd>=21) out.push({t:'Sepuluh Malam Terakhir Ramadhan',sacred:true,ins:'Malam-malam paling utama dalam setahun. Dianjurkan i\u2019tikaf dan memperbanyak ibadah; pada malam-malam ganjil diharap turunnya Lailatul Qadar.'});
   if(th.hm===9) out.push({t:'Bulan Ramadhan',ins:'Bulan puasa, sabar, dan memperbanyak Al-Qur\u2019an.'});
   if(th.hm===8) out.push({t:"Sya'ban \u2014 Persiapan Ramadhan",ins:'Bulan persiapan menuju Ramadhan; sebagian memperbanyak puasa sunnah.'});
   return out;
@@ -524,7 +541,7 @@ function renderHome(){
   // seasonal chips
   if(ss.length){
     html+='<div class="section-title">Suasana spiritual</div><div class="chips">';
-    ss.forEach((s,i)=> html+=`<div class="chip" data-season="${i}"><span class="ic">\u25c6</span>${esc(s.t)}</div>`);
+    ss.forEach((s,i)=> html+=`<div class="chip ${s.sacred?'sacred':''}" data-season="${i}"><span class="ic">${s.sacred?'\u2726':'\u25c6'}</span>${esc(s.t)}</div>`);
     html+='</div>';
   }
 
@@ -618,8 +635,8 @@ function renderCal(){
   $('#fab').style.display='none';
   showCalDay(onToday?noon(new Date()):null);
 }
-function cellHTML(g, mainNum, subLabel, isT, hasEv){
-  return `<div class="cell ${isT?'today':''}" data-date="${toISO(g)}"><div class="hd">${mainNum}</div><div class="gd">${subLabel}</div>${hasEv?'<span class="ev-dot"></span>':''}</div>`;
+function cellHTML(g, mainNum, subLabel, isT, hasEv, sacred){
+  return `<div class="cell ${isT?'today':''} ${sacred||''}" data-date="${toISO(g)}"><div class="hd">${mainNum}</div><div class="gd">${subLabel}</div>${hasEv?'<span class="ev-dot"></span>':''}</div>`;
 }
 function calHijri(){
   const {hy,hm}=calH;
@@ -629,9 +646,9 @@ function calHijri(){
   const events=genEvents(); const today=noon(new Date());
   let cells='';
   for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow); const c=g2h(g);
-    cells+=`<div class="cell muted" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
+    cells+=`<div class="cell muted ${sacredClass(c)}" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
   for(let d=1;d<=len;d++){ const g=h2g(hy,hm,d);
-    cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g))); }
+    cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g)), sacredClass({hm,hd:d})); }
   return { title:`<div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div>`, cells,
     note: isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:'' };
 }
@@ -644,9 +661,9 @@ function calGreg(){
   const sub=(g)=>{ const h=g2h(g); return h.hd===1?MH[h.hm-1].slice(0,3):h.hd; };
   let cells='';
   for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow);
-    cells+=`<div class="cell muted" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
+    cells+=`<div class="cell muted ${sacredClass(g2h(g))}" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
   for(let d=1;d<=len;d++){ const g=noon(new Date(gy,gm,d));
-    cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g))); }
+    cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g)), sacredClass(g2h(g))); }
   return { title:`<div class="m">${MG[gm]}</div><div class="y">${gy} M</div>`, cells,
     note:`<div class="muted-note" style="margin-top:12px">Angka kecil = tanggal Hijriah; nama bulan muncul saat bulan Hijriah berganti.</div>` };
 }
@@ -657,6 +674,10 @@ function showCalDay(date){
   const events=genEvents().filter(e=> sameDay(e.date,g));
   let html=`<div class="card"><div class="group-label" style="margin-top:0">${h.hd} ${MH[h.hm-1]} ${h.hy} H</div>
     <div class="muted-note" style="margin-bottom:6px">${esc(fmtG(g))} M</div>`;
+  if(h.hm===9 && h.hd>=21){ const odd=h.hd%2===1;
+    html+= odd
+      ? `<div class="sacred-note odd">\u2726 <b>Malam ke-${h.hd}</b> \u2014 malam ganjil sepuluh hari terakhir yang diharap sebagai Lailatul Qadar. Perbanyak ibadah, doa, dan i\u2019tikaf.</div>`
+      : `<div class="sacred-note">Bagian dari sepuluh malam terakhir Ramadhan \u2014 perbanyak ibadah dan i\u2019tikaf.</div>`; }
   html+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
   html+='</div>';
   wrap.innerHTML=html;

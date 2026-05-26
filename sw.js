@@ -3,7 +3,7 @@
      jatuh ke cache saat offline.
    - Aset statis (ikon/manifest): cache-first -> cepat & hemat.
    Bump CACHE setiap rilis untuk membersihkan cache lama. */
-const CACHE = 'hilal-v3';
+const CACHE = 'hilal-v4';
 const ASSETS = [
   './',
   './index.html',

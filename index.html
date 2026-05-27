@@ -369,6 +369,28 @@ img.em{ object-fit:contain; }
 .tlock .h{ font-family:var(--serif); font-size:16px; color:var(--cream); margin-bottom:7px; }
 .tlock .p{ font-size:13px; line-height:1.6; color:var(--muted); }
 .tlock .p b{ color:var(--cream-2); }
+/* requirement hints + renungan (artefak terkunci) */
+.treq{ text-align:left; list-style:none; padding:0; margin:0; }
+.treq li{ display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:9px 2px; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
+.treq li:last-child{ border-bottom:none; }
+.treq li.reqlbl{ display:block; border-bottom:none; padding:12px 2px 2px; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.treq .rq{ color:var(--cream-2); }
+.treq .rp{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; }
+.treq li.met .rq{ color:var(--cream); }
+.treq li.met .rp{ color:#6fae8f; font-weight:600; }
+.reqalt{ text-align:left; font-size:12.5px; color:var(--muted); margin:9px 2px 0; line-height:1.55; }
+.reqalt b{ color:var(--cream-2); }
+.trenung{ text-align:left; font-family:var(--serif); font-style:italic; font-size:14.5px; line-height:1.66; color:var(--cream-2);
+  margin-top:20px; padding:14px 16px; border-left:2px solid var(--gold-soft); border-radius:0 12px 12px 0; background:rgba(0,0,0,.16); }
+/* bulan haram skin */
+.card.haram{ border-color:rgba(203,166,78,.5);
+  box-shadow:var(--shadow), 0 0 0 1px rgba(203,166,78,.16), 0 12px 44px -18px rgba(203,166,78,.45);
+  background:radial-gradient(120% 75% at 50% -8%, rgba(203,166,78,.16), transparent 60%), linear-gradient(160deg,var(--surface-2),var(--surface)); }
+.haram-note{ display:flex; gap:10px; font-size:12.5px; line-height:1.55; color:#ecd9a6;
+  background:linear-gradient(160deg,rgba(203,166,78,.16),rgba(203,166,78,.04)); border:1px solid rgba(203,166,78,.4);
+  border-radius:12px; padding:11px 13px; margin-top:12px; }
+.haram-note .hx{ flex:none; color:var(--gold-hi); font-size:15px; line-height:1.25; }
+.haram-note b{ color:var(--gold-hi); }
 /* tracker controls */
 .trk{ display:inline-flex; gap:6px; margin-top:9px; }
 .trk button{ width:34px; height:30px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.18);
@@ -589,6 +611,7 @@ function prio(e){ return e.cat==='season'?5:e.cat==='annual'?4:e.cat==='monthly'
 
 /* ---------- seasonal contexts ---------- */
 function sacredClass(h){ if(h && h.hm===9 && h.hd>=21){ return (h.hd%2===1)?'sacred-odd':'sacred'; } return ''; }
+function isHaram(hm){ return hm===1||hm===7||hm===11||hm===12; }   // Muharram, Rajab, Dzulqa'dah, Dzulhijjah
 function fastingForbidden(h){ if(!h) return null; if(h.hm===10 && h.hd===1) return 'Idul Fitri'; if(h.hm===12 && h.hd===10) return 'Idul Adha'; if(h.hm===12 && h.hd>=11 && h.hd<=13) return 'Hari Tasyrik'; return null; }
 function cellClasses(h){ const a=[]; const s=sacredClass(h); if(s)a.push(s); if(fastingForbidden(h))a.push('forbidden'); return a.join(' '); }
 function seasons(){
@@ -765,7 +788,7 @@ function renderCal(){
       <button data-calmode="hijri" class="${calMode==='hijri'?'on':''}">Hijriah</button>
       <button data-calmode="greg" class="${calMode==='greg'?'on':''}">Masehi</button>
     </div>
-    <div class="card">
+    <div class="card ${body.haram?'haram':''}">
       <div class="cal-head">
         <button class="cal-nav" data-cal="-1" aria-label="Bulan sebelumnya">\u2039</button>
         <div class="title">${body.title}</div>
@@ -795,8 +818,11 @@ function calHijri(){
     cells+=`<div class="cell muted ${cellClasses(c)}" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
   for(let d=1;d<=len;d++){ const g=h2g(hy,hm,d);
     cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g)), cellClasses({hm,hd:d})); }
-  return { title:`<div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div>`, cells,
-    note: isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:'' };
+  const haram=isHaram(hm);
+  const haramNote=haram?`<div class="haram-note"><span class="hx">\u2726</span><div><b>Bulan Haram \u2014 ${MH[hm-1]}.</b> Salah satu bulan yang Allah muliakan. Keutamaan amal saleh dilipatgandakan dan dosa terasa lebih berat \u2014 perbanyak kebaikan, jagalah diri dari maksiat.</div></div>`:'';
+  const lockNote=isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:'';
+  return { title:`<div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div>`, cells, haram,
+    note: haramNote+lockNote };
 }
 function calGreg(){
   const {gy,gm}=calG;
@@ -810,8 +836,10 @@ function calGreg(){
     cells+=`<div class="cell muted ${cellClasses(g2h(g))}" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
   for(let d=1;d<=len;d++){ const g=noon(new Date(gy,gm,d));
     cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g)), cellClasses(g2h(g))); }
+  const h1=g2h(first).hm, h2=g2h(noon(new Date(gy,gm,len))).hm; const haramAny=isHaram(h1)||isHaram(h2);
+  const haramNote=haramAny?`<div class="haram-note"><span class="hx">\u2726</span><div>Sebagian bulan ini termasuk <b>Bulan Haram</b> \u2014 perbanyak amal, jauhi dosa.</div></div>`:'';
   return { title:`<div class="m">${MG[gm]}</div><div class="y">${gy} M</div>`, cells,
-    note:`<div class="muted-note" style="margin-top:12px">Angka kecil = tanggal Hijriah; nama bulan muncul saat bulan Hijriah berganti.</div>` };
+    note: haramNote+`<div class="muted-note" style="margin-top:12px">Angka kecil = tanggal Hijriah; nama bulan muncul saat bulan Hijriah berganti.</div>` };
 }
 function showCalDay(date){
   const wrap=$('#calDetail'); if(!wrap) return;
@@ -945,6 +973,68 @@ const RANKS=[
 ];
 function rankIndex(s){ let i=0; for(let j=0;j<RANKS.length;j++) if(s>=RANKS[j].min) i=j; return i; }
 function rankOf(s){ return RANKS[rankIndex(s)]; }
+
+/* ============================================================
+   PROGRESI Fase 2b — hari-aktif per jalan + gerbang dependency
+   Mata uang: jumlah HARI berbeda sebuah jalan dijalankan (anti-grind:
+   satu hari = satu langkah, sebanyak apa pun amal hari itu). Permanen.
+   ============================================================ */
+const SILVER=3, GOLD=4, SAP=5;                       // indeks nama rank (RANKS)
+const PATH_TH={                                       // ambang hari-aktif per jalan: ash,stone,bronze,silver,gold,sapphire,emerald
+  _daily:[0,4,9,16,28,46,70],
+  puasa: [0,2,5,8,14,23,35],                          // kadens Sen-Kam + Ayyamul Bidh
+  majelis:[0,2,4,7,12,20,30]                          // kadens ~mingguan
+};
+const GDAYS=[0,12,30,70,130,220,340,500,720,1000];    // total hari-jalan -> rank global (RANKS[0..9])
+const GATE={
+  puasa:{tier:'root'}, dzikir:{tier:'root'}, tilawah:{tier:'root'},
+  shalat: {tier:'bridge', self:GOLD, dep:[['dzikir'],['tilawah']]},
+  infaq:  {tier:'bridge', self:GOLD, dep:[['puasa'],['dzikir']]},
+  majelis:{tier:'bridge', self:GOLD, dep:[['tilawah'],['dzikir','infaq']]},
+  qiyamul:{tier:'apex', self:SAP, needRoots:1, needBridges:2}
+};
+const RENUNGAN={
+  puasa:"Menahan diri adalah gerbang pertama \u2014 dari ego yang dijinakkan, banyak jalan lain bermula.",
+  dzikir:"Hati yang hidup mengingat-Nya adalah tanah; di atasnyalah ibadah-ibadah lain tumbuh berakar.",
+  tilawah:"Mendekat pada firman-Nya membuka mata untuk memahami jalan-jalan yang datang setelahnya.",
+  shalat:"Ruku\u2019 dan sujud menjadi perjumpaan, bukan sekadar gerak, ketika hati lebih dulu hidup berzikir atau lidah lebih dulu akrab dengan firman-Nya. Itulah mengapa khusyuk menanti kedalaman Dzikir atau Tilawah.",
+  infaq:"Tangan yang memberi paling bersih saat ego sudah dilatih lapar oleh puasa, atau hati sudah terbiasa hanya mengharap pandangan-Nya lewat zikir \u2014 sebab memberi tanpa keduanya rawan menjadi panggung diri.",
+  majelis:"Ilmu menjadi cahaya, bukan sekadar catatan, ketika berakar pada wahyu \u2014 atau ketika hati yang berzikir menuntunnya turun menjadi amal yang memberi. Maka ia menanti Tilawah, atau perpaduan Dzikir dan sedekah.",
+  qiyamul:"Malam yang dihidupkan adalah muara, bukan hulu. Ia menyatu hanya pada jiwa yang telah meniti banyak jalan di siang hari \u2014 sebab yang sanggup berdiri lama di hadapan-Nya dalam gelap, adalah yang telah belajar mengisi terang dengan beragam bakti."
+};
+function catName(c){ return (CATMAP[c]||{}).t||c; }
+function pathTh(c){ return PATH_TH[c]||PATH_TH._daily; }
+function pathDays(c){ const s={}; const T=S.profile.track||{}; for(const k in T){ const r=T[k]; if(r&&r.s==='done'&&r.c===c) s[r.d]=1; } return Object.keys(s).length; }
+function pathIdx(c){ const d=pathDays(c), th=pathTh(c); let i=0; for(let j=0;j<th.length;j++) if(d>=th[j]) i=j; return i; }
+function totalDays(){ let s=0; for(const c of CATS) s+=pathDays(c.k); return s; }
+function gIndex(){ const d=totalDays(); let i=0; for(let j=0;j<GDAYS.length;j++) if(d>=GDAYS[j]) i=j; return i; }
+function activeDaySet(){ const s={}; const T=S.profile.track||{}; for(const k in T){ const r=T[k]; if(r&&r.s==='done') s[r.d]=1; } return s; }
+function currentStreak(){ const s=activeDaySet(); const t=noon(new Date());
+  let start=s[toISO(t)]?t:(s[toISO(addDays(t,-1))]?addDays(t,-1):null); if(!start) return 0;
+  let n=0,d=start; while(s[toISO(d)]){ n++; d=addDays(d,-1); } return n; }
+function depMet(dep){ return dep.some(cl=>cl.every(c=>pathIdx(c)>=GOLD)); }
+function titleUnlocked(k){
+  if(k==='truth') return true;
+  if((S.profile.artifacts||[]).includes(k)) return true;          // sekali terbuka, permanen
+  const g=GATE[k]; if(!g) return false;
+  if(g.tier==='root') return pathIdx(k)>=GOLD || (pathIdx(k)>=SILVER && currentStreak()>=21);
+  if(g.tier==='bridge') return pathIdx(k)>=g.self && depMet(g.dep);
+  if(g.tier==='apex'){ const A=S.profile.artifacts||[];
+    const r=['puasa','dzikir','tilawah'].filter(x=>A.includes(x)).length;
+    const b=['shalat','infaq','majelis'].filter(x=>A.includes(x)).length;
+    return pathIdx(k)>=g.self && r>=g.needRoots && b>=g.needBridges; }
+  return false;
+}
+function evalUnlocks(){ if(!S.profile.started) return [];
+  const A=S.profile.artifacts; const added=[];
+  for(const k of ['puasa','dzikir','tilawah','shalat','infaq','majelis','qiyamul']){
+    if(!A.includes(k) && titleUnlocked(k)){ A.push(k); added.push(k); } }
+  return added;
+}
+function wornTitle(){ const A=S.profile.artifacts||[];
+  const tiers=[['qiyamul'],['shalat','infaq','majelis'],['puasa','dzikir','tilawah']];
+  for(const tier of tiers){ const own=tier.filter(k=>A.includes(k)); if(own.length){ own.sort((a,b)=>pathDays(b)-pathDays(a)); return own[0]; } }
+  return 'truth'; }
 
 /* ---------- konten title (sumber: Konten_Profil_Title_HILAL) ---------- */
 const TITLE_CONTENT={
@@ -1131,6 +1221,7 @@ function trkState(key){ const r=S.profile.track[key]; return r?r.s:null; }
 function setTrack(key,cat,dayISO,state){ const cur=trkState(key);
   if(cur===state){ delete S.profile.track[key]; }
   else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO); }
+  if(S.profile.started) titleSync();
   save(); }
 function questProgress(cat,dayISO){ if(!S.profile.started) return; if(dayISO!==toISO(new Date())) return;
   profileSync(); const q=S.profile.q; let changed=false;
@@ -1153,17 +1244,13 @@ function profileSync(){ if(!S.profile.started) return; const today=toISO(new Dat
   titleSync(); save(); }
 function tallyCategories(days){ const cut=addDays(new Date(),-days); const t={};
   for(const k in S.profile.track){ const r=S.profile.track[k]; if(r.s==='done'&&fromISO(r.d)>=cut) t[r.c]=(t[r.c]||0)+1; } return t; }
-function titleSync(){ if(!S.profile.started) return; const th=g2h(new Date()); const cur=S.profile.title;
-  if(cur&&cur.hy===th.hy&&cur.hm===th.hm) return;
-  const tally=tallyCategories(30); let max=0; for(const c of CATS){ const n=tally[c.k]||0; if(n>max)max=n; }
-  if(max===0){ S.profile.title={key:'truth',hy:th.hy,hm:th.hm}; return; }
-  const top=CATS.filter(c=>(tally[c.k]||0)===max).map(c=>c.k);
-  const dom=(cur&&top.includes(cur.key))?cur.key:top[0];
-  S.profile.title={key:dom,hy:th.hy,hm:th.hm};
-  if(!S.profile.artifacts.includes(dom)) S.profile.artifacts.push(dom);
-  S._titleRevealed=dom; }
+function titleSync(){ if(!S.profile.started) return;
+  const added=evalUnlocks();
+  S.profile.title={key:wornTitle()};
+  if(added.length){ const cat=CATMAP[added[added.length-1]]||TRUTH;
+    toast('Artefak terbuka: '+cat.title+(added.length>1?(' (+'+(added.length-1)+')'):'')); } }
 function startJourney(){ S.profile.started=true; S.profile.startedAt=toISO(new Date());
-  const th=g2h(new Date()); S.profile.title={key:'truth',hy:th.hy,hm:th.hm}; S.profile.q.day=null;
+  S.profile.title={key:'truth'}; S.profile.q.day=null;
   profileSync(); save(); renderProfil(); toast('Perjalananmu dimulai. Bismillah.'); }
 
 /* ---------- pie ---------- */
@@ -1188,13 +1275,15 @@ function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
       <div class="card"><div class="invite">${emblem('truth')}
         <h2>Mulai perjalanan spiritualmu</h2>
         <p>Lacak amal harianmu, temukan ibadah yang paling hidup dalam dirimu, dan bergeraklah maju sedikit demi sedikit menuju makna keikhlasan.</p>
-        <div class="muted-note">Profil dihitung diam-diam dari amal yang kamu centang. Title disematkan tiap awal bulan Hijriah \u2014 tak perlu dicek tiap hari. Semua privat, hanya di perangkatmu.</div>
+        <div class="muted-note">Profil dihitung diam-diam dari amal yang kamu centang. Tiap jalan ibadah matang dengan keistiqamahan, dan beberapa artefak menanti kamu meniti jalan lain lebih dulu. Semua privat, hanya di perangkatmu.</div>
         <button class="btn primary block" data-questbegin="1">Quest Begin \u2014 mulai bulan ini</button>
         <button class="btn ghost block" data-goto="home" style="margin-top:9px">Nanti saja</button>
       </div></div></div>`; return; }
   profileSync();
-  const p=S.profile, score=p.score, rk=rankOf(score), ri=rankIndex(score), next=RANKS[Math.min(ri+1,RANKS.length-1)];
-  const lo=rk.min, hi=next.min, pct=hi>lo?Math.min(100,Math.round((score-lo)/(hi-lo)*100)):100;
+  const p=S.profile;
+  const gi=gIndex(), rk=RANKS[gi], next=RANKS[Math.min(gi+1,RANKS.length-1)];
+  const gd=totalDays(), glo=GDAYS[gi], ghi=GDAYS[Math.min(gi+1,GDAYS.length-1)];
+  const pct=ghi>glo?Math.min(100,Math.round((gd-glo)/(ghi-glo)*100)):100;
   const tc=p.title.key==='truth'?TRUTH:(CATMAP[p.title.key]||TRUTH);
   const tally=tallyCategories(30); const q=p.q, maxB=q.penaltyUntil?1:3;
   const questHTML=q.batch.map(qq=>`<div class="quest ${qq.done?'done':''}"><div class="qx">${qq.done?'\u2713':''}</div><div class="qt">${esc(qq.t)}</div>${qq.done?'<div class="qp">+8</div>':''}</div>`).join('');
@@ -1213,17 +1302,16 @@ function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
       <div class="rankpill"><span class="gem"></span>${esc(rk.t)} Rank</div>
       <div class="crest-hint">Ketuk untuk membaca jalanmu</div></div>
     <div class="card">
-      <div class="set-row" style="padding-top:0;border-bottom:none"><div class="l"><div class="t">Peringkat</div><div class="d">Skor ${score} \u00b7 ${ri<9?('menuju '+esc(next.t)):'puncak tertinggi'}</div></div></div>
+      <div class="set-row" style="padding-top:0;border-bottom:none"><div class="l"><div class="t">Peringkat</div><div class="d">${gd} hari aktif \u00b7 ${gi<9?('menuju '+esc(next.t)):'puncak tertinggi'}</div></div></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="bar-meta"><span>${esc(rk.t)}</span><span>${ri<9?esc(next.t)+' \u00b7 '+hi:'Celestial'}</span></div></div>
+      <div class="bar-meta"><span>${esc(rk.t)}</span><span>${gi<9?esc(next.t)+' \u00b7 '+ghi:'Celestial'}</span></div></div>
     <div class="section-title">Quest harian</div>
     <div class="card">${questHTML}${qnote}</div>
     <div class="section-title">Komposisi amal (30 hari)</div>
     <div class="card"><div class="pie-wrap">${pieSVG(tally)}<div class="legend">${legend}</div></div>${nudge?('<div style="margin-top:14px">'+nudge+'</div>'):''}</div>
     <div class="section-title">Koleksi artefak</div>
     <div class="card"><div class="arts">${arts}</div>
-      <div class="muted-note" style="margin-top:12px">Artefak terbuka saat sebuah ibadah menjadi paling dominan di akhir bulan Hijriah, dan menjadi milikmu selamanya.</div></div></div>`;
-  if(S._titleRevealed){ const tt=S._titleRevealed==='truth'?TRUTH:CATMAP[S._titleRevealed]; if(tt) toast('Title bulan ini: '+tt.title); S._titleRevealed=null; }
+      <div class="muted-note" style="margin-top:12px">Tiap artefak terbuka ketika jalannya matang \u2014 dan jalan tertentu menanti kamu meniti jalan lain lebih dulu. Ketuk gembok untuk melihat syaratnya. Sekali terbuka, ia milikmu selamanya.</div></div></div>`;
 }
 
 /* ---------- dev mode (pengujian) ---------- */
@@ -1246,6 +1334,8 @@ function devAction(cmd){ const P=S.profile; const today=toISO(new Date()); const
   else if(g==='penalty'){ if(a==='on'){ P.q.maxedStreak=3; P.q.penaltyUntil=toISO(addDays(new Date(),7)); P.q.batchN=1; P.q.exhausted=false; P.q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,1)); } else { P.q.penaltyUntil=null; P.q.maxedStreak=0; } }
   else if(g==='unlockall'){ P.artifacts=['truth'].concat(CATS.map(c=>c.k)); }
   else if(g==='seed'){ seedDummy(); }
+  else if(g==='grant'){ const c=a||'dzikir'; for(let i=0;i<50;i++){ P.track['grant-'+c+'-'+i]={s:'done',c,d:toISO(addDays(new Date(),-(i+1)))}; } titleSync(); }
+  else if(g==='cleardays'){ for(const k in P.track){ if(k.indexOf('grant-')===0||k.indexOf('seed-')===0) delete P.track[k]; } titleSync(); }
   else if(g==='reset'){ if(a==='soft'){ P.track={}; P.score=0; P.title={key:'truth',hy:th.hy,hm:th.hm}; P.artifacts=['truth'];
       P.q={day:null,batch:[],batchN:1,doneToday:0,exhausted:false,maxedStreak:0,penaltyUntil:null,lastDone:null}; profileSync(); }
     else { P.started=false; } }
@@ -1263,7 +1353,10 @@ function devPanel(){ const P=S.profile;
   return `<div class="section-title" style="color:var(--danger)">Mode pengembang</div>
     <div class="card">
       ${ro('Skor',P.score)}${ro('Rank',rk.t+' (idx '+ri+')')}${ro('Title',tc.title)}${ro('Quest custom',(questRatio(ri)*100)+'%')}
+      ${ro('Rank global',RANKS[gIndex()].t+' \u00b7 '+totalDays()+' hari')}${ro('Streak',currentStreak()+' hari')}${ro('Hari/jalan',CATS.map(c=>c.k.slice(0,2)+':'+pathDays(c.k)).join('  '))}
       ${ro('Batch',P.q.batchN+'/'+(P.q.penaltyUntil?1:3)+(P.q.exhausted?' penuh':''))}${ro('Penalti',P.q.penaltyUntil?('s/d '+P.q.penaltyUntil):'tidak')}${ro('maxedStreak',P.q.maxedStreak||0)}${ro('Artefak',P.artifacts.length+'/8')}${ro('Track',Object.keys(P.track).length)}
+      <div class="devlbl">Beri 50 hari-aktif ke jalan (uji gerbang)</div>
+      <div class="dev-grid">${CATS.map(c=>`<button class="devbtn" data-dev="grant:${c.k}">${esc(c.k)}</button>`).join('')}<button class="devbtn" data-dev="cleardays">hapus hari</button></div>
       <div class="devlbl">Lompat ke rank</div><div class="dev-grid">${rankBtns}</div>
       <div class="devlbl">Lompat ke title</div><div class="dev-grid">${titleBtns}</div>
       <div class="devlbl">Skor manual</div>
@@ -1347,6 +1440,37 @@ function aboutSheet(){
 }
 
 /* ---------- detail title / artefak ---------- */
+/* ---------- hint syarat untuk artefak terkunci ---------- */
+function reqRow(cat, needIdx){
+  const idx=pathIdx(cat), days=pathDays(cat), need=pathTh(cat)[needIdx], met=idx>=needIdx;
+  return `<li class="${met?'met':''}"><span class="rq">${esc(catName(cat))} \u00b7 ${RANKS[needIdx].t}</span><span class="rp">${met?'\u2713':RANKS[idx].t+' \u00b7 '+days+'/'+need+' hari'}</span></li>`;
+}
+function lockedReqHTML(key){
+  const g=GATE[key]; if(!g) return '';
+  let rows='', extra='';
+  if(g.tier==='root'){
+    rows=reqRow(key, GOLD);
+    extra=`<div class="reqalt">atau capai <b>${RANKS[SILVER].t}</b> pada jalan ini lalu istiqamah <b>21 hari beruntun</b> (streak kini: ${currentStreak()} hari).</div>`;
+  } else if(g.tier==='bridge'){
+    rows=reqRow(key, g.self);
+    rows+=`<li class="reqlbl">dan salah satu di bawah ini, \u00b7 ${RANKS[GOLD].t}</li>`;
+    rows+=g.dep.map(cl=>{
+      if(cl.length===1) return reqRow(cl[0], GOLD);
+      const met=cl.every(c=>pathIdx(c)>=GOLD);
+      const nm=cl.map(catName).join(' + ');
+      const pr=cl.map(c=>pathDays(c)+'/'+pathTh(c)[GOLD]).join(' & ');
+      return `<li class="${met?'met':''}"><span class="rq">${esc(nm)} \u00b7 ${RANKS[GOLD].t}</span><span class="rp">${met?'\u2713':esc(pr)+' hari'}</span></li>`;
+    }).join('');
+  } else if(g.tier==='apex'){
+    const A=S.profile.artifacts||[];
+    const r=['puasa','dzikir','tilawah'].filter(x=>A.includes(x)).length;
+    const b=['shalat','infaq','majelis'].filter(x=>A.includes(x)).length;
+    rows=reqRow(key, g.self);
+    rows+=`<li class="${r>=g.needRoots?'met':''}"><span class="rq">Minimal ${g.needRoots} Jalan Dasar</span><span class="rp">${r>=g.needRoots?'\u2713':r+'/'+g.needRoots}</span></li>`;
+    rows+=`<li class="${b>=g.needBridges?'met':''}"><span class="rq">Minimal ${g.needBridges} Jalan Penghubung</span><span class="rp">${b>=g.needBridges?'\u2713':b+'/'+g.needBridges}</span></li>`;
+  }
+  return `<div class="tsec-h">Syarat membuka</div><ul class="treq">${rows}</ul>${extra}`;
+}
 function openTitleSheet(key){
   const cat = key==='truth' ? TRUTH : (CATMAP[key]||TRUTH);
   const tc = TITLE_CONTENT[key]; if(!tc) return;
@@ -1356,10 +1480,10 @@ function openTitleSheet(key){
   if(!unlocked){
     openSheet(`<div class="tdetail" style="--mark:var(--muted)">
       ${lockedEmblem()}
-      <div class="nm">Artefak Terkunci</div>
-      <div class="jalan" style="margin-top:10px">Belum tersingkap</div>
-      <div class="tlock"><div class="h">Jalan yang menanti</div>
-        <div class="p">Artefak ini terbuka ketika salah satu ibadah menjadi paling dominan di akhir sebuah bulan Hijriah. Nama, lambang, dan kisahnya sengaja dirahasiakan sampai kamu mencapainya \u2014 biarkan amalmu yang menentukan jalan mana yang menyambutmu.</div></div>
+      <div class="nm">???</div>
+      <div class="jalan" style="margin-top:8px">Artefak Terkunci</div>
+      ${lockedReqHTML(key)}
+      <div class="trenung">\u201C${esc(RENUNGAN[key]||'')}\u201D</div>
       <button class="btn block" data-close style="margin-top:18px">Tutup</button></div>`);
     return;
   }

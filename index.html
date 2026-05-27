@@ -1352,20 +1352,23 @@ function devPanel(){ const P=S.profile;
   const titleBtns=[{k:'truth',t:'Truth'}].concat(CATS.map(c=>({k:c.k,t:c.title.split(' ')[0]}))).map(x=>`<button class="devbtn" data-dev="title:${x.k}">${esc(x.t)}</button>`).join('');
   return `<div class="section-title" style="color:var(--danger)">Mode pengembang</div>
     <div class="card">
-      ${ro('Skor',P.score)}${ro('Rank',rk.t+' (idx '+ri+')')}${ro('Title',tc.title)}${ro('Quest custom',(questRatio(ri)*100)+'%')}
-      ${ro('Rank global',RANKS[gIndex()].t+' \u00b7 '+totalDays()+' hari')}${ro('Streak',currentStreak()+' hari')}${ro('Hari/jalan',CATS.map(c=>c.k.slice(0,2)+':'+pathDays(c.k)).join('  '))}
-      ${ro('Batch',P.q.batchN+'/'+(P.q.penaltyUntil?1:3)+(P.q.exhausted?' penuh':''))}${ro('Penalti',P.q.penaltyUntil?('s/d '+P.q.penaltyUntil):'tidak')}${ro('maxedStreak',P.q.maxedStreak||0)}${ro('Artefak',P.artifacts.length+'/8')}${ro('Track',Object.keys(P.track).length)}
-      <div class="devlbl">Beri 50 hari-aktif ke jalan (uji gerbang)</div>
-      <div class="dev-grid">${CATS.map(c=>`<button class="devbtn" data-dev="grant:${c.k}">${esc(c.k)}</button>`).join('')}<button class="devbtn" data-dev="cleardays">hapus hari</button></div>
-      <div class="devlbl">Lompat ke rank</div><div class="dev-grid">${rankBtns}</div>
-      <div class="devlbl">Lompat ke title</div><div class="dev-grid">${titleBtns}</div>
-      <div class="devlbl">Skor manual</div>
+      <div class="devlbl">Progres baru \u2014 crest &amp; gerbang (hari-aktif)</div>
+      ${ro('Rank crest',RANKS[gIndex()].t+' \u00b7 '+totalDays()+' hari')}${ro('Streak',currentStreak()+' hari')}${ro('Title dikenakan',tc.title)}${ro('Artefak',P.artifacts.length+'/8')}
+      ${ro('Hari/jalan',CATS.map(c=>c.k.slice(0,2)+':'+pathDays(c.k)+RANKS[pathIdx(c.k)].t[0]).join('  '))}
+      <div class="dev-grid">${CATS.map(c=>`<button class="devbtn" data-dev="grant:${c.k}">+${esc(c.k)}</button>`).join('')}<button class="devbtn" data-dev="cleardays">hapus hari</button></div>
+      <div class="dev-grid"><button class="devbtn" data-dev="unlockall">Buka semua artefak</button><button class="devbtn" data-dev="sync:title">Re-eval gerbang</button></div>
+      <div class="muted-note" style="margin:8px 0 2px;font-size:11px;line-height:1.5">Rank crest &amp; gerbang artefak dikendalikan <b>hari-aktif</b> di atas. Skor/rank di blok bawah hanya <b>momentum quest harian</b> \u2014 tak mengubah crest.</div>
+      <div class="devlbl">Buka artefak manual (uji koleksi)</div><div class="dev-grid">${titleBtns}</div>
+      <div class="devlbl" style="margin-top:16px;opacity:.75">\u2500\u2500 Momentum quest (internal) \u2500\u2500</div>
+      ${ro('Skor quest',P.score)}${ro('Rank quest',rk.t+' (idx '+ri+')')}${ro('Quest custom',(questRatio(ri)*100)+'%')}${ro('Batch',P.q.batchN+'/'+(P.q.penaltyUntil?1:3)+(P.q.exhausted?' penuh':''))}${ro('Penalti',P.q.penaltyUntil?('s/d '+P.q.penaltyUntil):'tidak')}
+      <div class="devlbl">Skor quest \u2014 lompat (tak ubah crest)</div><div class="dev-grid">${rankBtns}</div>
+      <div class="devlbl">Skor quest \u2014 manual</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="number" id="devScore" value="${P.score}" style="flex:1"/><button class="devbtn" data-dev="setscore" style="flex:none;padding:9px 16px">Set</button></div>
       <div class="dev-grid"><button class="devbtn" data-dev="score:50">+50</button><button class="devbtn" data-dev="score:200">+200</button><button class="devbtn" data-dev="score:-50">\u221250</button><button class="devbtn" data-dev="score:-200">\u2212200</button></div>
       <div class="devlbl">Sinkronisasi & quest</div>
-      <div class="dev-grid"><button class="devbtn" data-dev="sync:day">Force hari+1</button><button class="devbtn" data-dev="sync:title">Force title</button><button class="devbtn" data-dev="quest:fill">Selesaikan batch</button><button class="devbtn" data-dev="quest:reset">Reset quest</button><button class="devbtn" data-dev="penalty:on">Picu penalti</button><button class="devbtn" data-dev="penalty:off">Hapus penalti</button></div>
+      <div class="dev-grid"><button class="devbtn" data-dev="sync:day">Force hari+1</button><button class="devbtn" data-dev="quest:fill">Selesaikan batch</button><button class="devbtn" data-dev="quest:reset">Reset quest</button><button class="devbtn" data-dev="penalty:on">Picu penalti</button><button class="devbtn" data-dev="penalty:off">Hapus penalti</button></div>
       <div class="devlbl">Data & reset</div>
-      <div class="dev-grid"><button class="devbtn" data-dev="seed">Isi data contoh</button><button class="devbtn" data-dev="unlockall">Buka semua artefak</button><button class="devbtn" data-dev="reset:soft">Reset profil</button><button class="devbtn" data-dev="reset:off">Matikan profiling</button></div>
+      <div class="dev-grid"><button class="devbtn" data-dev="seed">Isi data contoh</button><button class="devbtn" data-dev="reset:soft">Reset profil</button><button class="devbtn" data-dev="reset:off">Matikan profiling</button></div>
       <button class="btn ghost block" data-dev="devoff" style="margin-top:12px">Tutup mode pengembang</button>
     </div>`;
 }

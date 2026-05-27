@@ -391,6 +391,12 @@ img.em{ object-fit:contain; }
   border-radius:12px; padding:11px 13px; margin-top:12px; }
 .haram-note .hx{ flex:none; color:var(--gold-hi); font-size:15px; line-height:1.25; }
 .haram-note b{ color:var(--gold-hi); }
+/* puasa Syawal checklist */
+.banner.syawal{ cursor:pointer; }
+.syawal-pips{ display:flex; gap:8px; margin:11px 0 5px; }
+.syawal-pip{ width:23px; height:23px; border-radius:50%; border:1.5px solid rgba(203,166,78,.5); background:rgba(0,0,0,.2); display:grid; place-items:center; flex:none; }
+.syawal-pip.on{ background:linear-gradient(160deg,var(--gold),#a9863a); border-color:transparent; box-shadow:0 2px 8px -3px rgba(203,166,78,.6); }
+.syawal-pip.on::after{ content:"\2713"; color:#241d0c; font-size:12px; font-weight:700; line-height:1; }
 /* tracker controls */
 .trk{ display:inline-flex; gap:6px; margin-top:9px; }
 .trk button{ width:34px; height:30px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.18);
@@ -528,7 +534,7 @@ const LOCK_MONTHS = [ {hm:9,nm:'Awal Ramadhan'}, {hm:10,nm:'Idul Fitri (1 Syawal
 const WEEKLY = [
   {wd:1, t:'Puasa Senin', ins:'Hari Senin dianjurkan berpuasa sunnah.'},
   {wd:4, t:'Puasa Kamis', ins:'Hari Kamis dianjurkan berpuasa sunnah; malam harinya adalah malam Jumat.'},
-  {wd:5, t:'Hari Jumat',  ins:'Hari paling utama dalam sepekan; dianjurkan memperbanyak shalawat dan membaca surah Al-Kahfi.'},
+  {wd:5, t:'Baca Surah Al-Kahfi', ins:'Hari Jumat adalah hari paling utama dalam sepekan \u2014 dianjurkan membaca surah Al-Kahfi dan memperbanyak shalawat.'},
 ];
 
 function isLockedMonth(hy,hm){ return !!S.locks[hy+'-'+hm]; }
@@ -610,7 +616,12 @@ function recurDesc(c){
 function prio(e){ return e.cat==='season'?5:e.cat==='annual'?4:e.cat==='monthly'?2:e.cat==='user'?3:1; }
 
 /* ---------- seasonal contexts ---------- */
-function sacredClass(h){ if(h && h.hm===9 && h.hd>=21){ return (h.hd%2===1)?'sacred-odd':'sacred'; } return ''; }
+function sacredClass(h){ if(!h) return '';
+  if(h.hm===9 && h.hd>=21) return (h.hd%2===1)?'sacred-odd':'sacred';   // 10 malam terakhir Ramadhan
+  if(h.hm===12 && h.hd>=1 && h.hd<=10) return 'sacred';                 // 10 hari pertama Dzulhijjah (violet lembut)
+  if(h.hm===8 && h.hd===15) return 'sacred-odd';                        // Nisfu Sya'ban (highlight)
+  if(h.hm===8 && (h.hd===13||h.hd===14)) return 'sacred';              // Ayyamul Bidh Sya'ban (violet lembut)
+  return ''; }
 function isHaram(hm){ return hm===1||hm===7||hm===11||hm===12; }   // Muharram, Rajab, Dzulqa'dah, Dzulhijjah
 function fastingForbidden(h){ if(!h) return null; if(h.hm===10 && h.hd===1) return 'Idul Fitri'; if(h.hm===12 && h.hd===10) return 'Idul Adha'; if(h.hm===12 && h.hd>=11 && h.hd<=13) return 'Hari Tasyrik'; return null; }
 function cellClasses(h){ const a=[]; const s=sacredClass(h); if(s)a.push(s); if(fastingForbidden(h))a.push('forbidden'); return a.join(' '); }
@@ -704,6 +715,19 @@ function renderHome(){
       <div class="hdate">${hero.span?esc(hero.span):(hero.hijri?esc(fmtH(hero.hijri)):esc(recurDesc2(hero)))} \u00b7 ${esc(fmtGshort(hero.date))}</div>
       <div class="count"><span class="num">${wl.now?wl.n:wl.n}</span><span class="lbl">${wl.now?(wl.u||''):wl.u}${hero.est?'  \u00b7  ':''}${hero.est?'<span class="tag est">perkiraan</span>':''}</span></div>
       ${hero.ins?`<div class="insight">${esc(hero.ins)}</div>`:''}
+    </div>`;
+  }
+
+  // event khusus: Puasa Sunnah Syawal (6 hari)
+  if(g2h(new Date()).hm===10){
+    const sc=syawalCount(), n=Math.min(sc,6);
+    const pips=Array.from({length:6},(_,i)=>`<span class="syawal-pip ${i<n?'on':''}"></span>`).join('');
+    html+=`<div class="banner syawal" data-goto="notes">
+      <div class="h">Puasa Sunnah Syawal \u2014 ${n}/6 hari</div>
+      <div class="syawal-pips">${pips}</div>
+      <div class="p">${sc>=6
+        ?'Enam hari telah genap \u2014 in sya Allah pahalanya seperti puasa setahun penuh. Semoga diterima.'
+        :'Enam hari puasa di bulan Syawal, boleh terpisah-pisah. Tandai puasamu di Catatan atau Kalender; semua puasa sunnah Syawal ikut terhitung.'}</div>
     </div>`;
   }
 
@@ -852,6 +876,12 @@ function showCalDay(date){
     html+= odd
       ? `<div class="sacred-note odd">\u2726 <b>Malam ke-${h.hd}</b> \u2014 malam ganjil sepuluh hari terakhir yang diharap sebagai Lailatul Qadar. Perbanyak ibadah, doa, dan i\u2019tikaf.</div>`
       : `<div class="sacred-note">Bagian dari sepuluh malam terakhir Ramadhan \u2014 perbanyak ibadah dan i\u2019tikaf.</div>`; }
+  if(h.hm===12 && h.hd>=1 && h.hd<=10){
+    html+=`<div class="sacred-note">Bagian dari <b>sepuluh hari pertama Dzulhijjah</b> \u2014 hari-hari yang amal salehnya paling dicintai Allah. Perbanyak takbir, dzikir, sedekah, dan puasa (kecuali pada hari raya).</div>`; }
+  if(h.hm===8 && h.hd===15){
+    html+=`<div class="sacred-note odd">\u2726 <b>Nisfu Sya\u2019ban</b> \u2014 malam pertengahan Sya\u2019ban; sebagian memperbanyak ibadah dan doa sebagai persiapan menyambut Ramadhan.</div>`; }
+  else if(h.hm===8 && (h.hd===13||h.hd===14)){
+    html+=`<div class="sacred-note">Ayyamul Bidh Sya\u2019ban \u2014 puasa \u201Chari-hari putih\u201D di bulan persiapan Ramadhan.</div>`; }
   const ff=fastingForbidden(h);
   if(ff) html+=`<div class="forbidden-note">\u2715 Diharamkan berpuasa pada hari ini \u2014 ${ff}.</div>`;
   html+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
@@ -1214,10 +1244,14 @@ function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.
   if(!ff){ if(day===1)add('sys-senin','puasa','Puasa Senin'); if(day===4)add('sys-kamis','puasa','Puasa Kamis');
     if([13,14,15].includes(h.hd)&&!(h.hm===12&&h.hd===13))add('sys-ab','puasa','Puasa Ayyamul Bidh');
     if(h.hm===12&&h.hd===9)add('sys-arafah','puasa','Puasa Arafah');
-    if(h.hm===1&&h.hd===9)add('sys-tasua','puasa','Puasa Tasua'); if(h.hm===1&&h.hd===10)add('sys-asyura','puasa','Puasa Asyura'); }
+    if(h.hm===1&&h.hd===9)add('sys-tasua','puasa','Puasa Tasua'); if(h.hm===1&&h.hd===10)add('sys-asyura','puasa','Puasa Asyura');
+    if(h.hm===10 && h.hd>=2 && out.every(o=>o.cat!=='puasa')) add('sys-syawal','puasa','Puasa Syawal'); }
+  if(day===5) add('sys-kahfi','tilawah','Baca Surah Al-Kahfi');
   for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g)}); }
   return out; }
-function trkState(key){ const r=S.profile.track[key]; return r?r.s:null; }
+function syawalCount(){ const hy=g2h(new Date()).hy; const s={};
+  for(const k in S.profile.track){ const r=S.profile.track[k]; if(r&&r.s==='done'&&r.c==='puasa'){ const hh=g2h(fromISO(r.d)); if(hh.hm===10&&hh.hy===hy) s[r.d]=1; } }
+  return Object.keys(s).length; }
 function setTrack(key,cat,dayISO,state){ const cur=trkState(key);
   if(cur===state){ delete S.profile.track[key]; }
   else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO); }

@@ -324,7 +324,7 @@ textarea{ resize:vertical; min-height:64px; }
 .art{ text-align:center; }
 .art .em{ width:100%; aspect-ratio:1; }
 img.em{ object-fit:contain; }
-.art.locked .em{ filter:grayscale(1) brightness(.5); opacity:.4; }
+.art.locked .em{ opacity:.9; }
 .art .an{ font-size:10px; color:var(--muted); margin-top:5px; line-height:1.2; }
 .art.unlocked .an{ color:var(--cream-2); }
 .art{ cursor:pointer; transition:transform .12s; }
@@ -1089,6 +1089,16 @@ function emblem(key,cls){
   if(EMBLEM_IMG[key]) return `<img class="em ${cls||''}" src="${EMBLEM_IMG[key]}" alt="" loading="lazy" decoding="async">`;
   const cat=key==='truth'?TRUTH:(CATMAP[key]||TRUTH); const col=cat.c;
   return `<svg class="em ${cls||''}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="${col}22" stroke="${col}55" stroke-width="2"/>${emblemSym(key,col)}</svg>`; }
+/* placeholder seragam untuk artefak terkunci \u2014 sengaja tak membocorkan emblem aslinya */
+function lockedEmblem(cls){
+  return `<svg class="em ${cls||''}" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M50 13 L79 23 L79 49 Q79 71 50 88 Q21 71 21 49 L21 23 Z" fill="#23332d" stroke="rgba(134,160,146,.28)" stroke-width="2"/>
+    <path d="M50 19 L73 27 L73 49 Q73 67 50 81 Q27 67 27 49 L27 27 Z" fill="none" stroke="rgba(134,160,146,.12)" stroke-width="1.4"/>
+    <path d="M43 51 V45 a7 7 0 0 1 14 0 V51" fill="none" stroke="#6f8a7e" stroke-width="3.6" stroke-linecap="round"/>
+    <rect x="38.5" y="51" width="23" height="18" rx="4" fill="#6f8a7e"/>
+    <circle cx="50" cy="58.5" r="2.5" fill="#23332d"/>
+    <rect x="48.7" y="59.5" width="2.6" height="5.5" rx="1.3" fill="#23332d"/>
+  </svg>`; }
 
 /* ---------- quest engine ---------- */
 const OTHERS=['shalat','qiyamul','dzikir','tilawah','infaq','majelis'];
@@ -1195,7 +1205,7 @@ function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
   const legend=ent.filter(x=>x.n>0).sort((a,b)=>b.n-a.n).map(x=>`<div class="lg"><span class="sw" style="background:${x.c.c}"></span>${esc(x.c.t)}<span class="lv">${x.n}</span></div>`).join('')||`<div class="muted-note">Belum ada amal tercatat. Centang ibadahmu di Catatan atau Kalender.</div>`;
   let nudge=''; if(total>0){ const weak=ent.slice().sort((a,b)=>a.n-b.n)[0]; nudge=`<div class="nudge">Area yang bisa kamu kuatkan: <b>${esc(weak.c.t)}</b>. Coba jadwalkan satu di tab Catatan.</div>`; }
   const arts=[{k:'truth'}].concat(CATS.map(c=>({k:c.k}))).map(a=>{ const un=p.artifacts.includes(a.k); const cat=a.k==='truth'?TRUTH:CATMAP[a.k];
-    return `<div class="art ${un?'unlocked':'locked'}" data-titledetail="${a.k}">${emblem(a.k)}<div class="an">${un?esc(cat.title):'???'}</div></div>`; }).join('');
+    return `<div class="art ${un?'unlocked':'locked'}" data-titledetail="${a.k}">${un?emblem(a.k):lockedEmblem()}<div class="an">${un?esc(cat.title):'???'}</div></div>`; }).join('');
   v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
     <div class="crest tappable" data-titledetail="${p.title.key}" style="--crest-glow:${tc.c}33;--rank-c:${rk.c}">${emblem(p.title.key)}
       <div class="title-nm">${esc(tc.title)}</div>
@@ -1343,6 +1353,16 @@ function openTitleSheet(key){
   const col = cat.c;
   const unlocked = key==='truth' || (S.profile.artifacts||[]).includes(key);
   const isCurrent = S.profile.started && S.profile.title && S.profile.title.key===key;
+  if(!unlocked){
+    openSheet(`<div class="tdetail" style="--mark:var(--muted)">
+      ${lockedEmblem()}
+      <div class="nm">Artefak Terkunci</div>
+      <div class="jalan" style="margin-top:10px">Belum tersingkap</div>
+      <div class="tlock"><div class="h">Jalan yang menanti</div>
+        <div class="p">Artefak ini terbuka ketika salah satu ibadah menjadi paling dominan di akhir sebuah bulan Hijriah. Nama, lambang, dan kisahnya sengaja dirahasiakan sampai kamu mencapainya \u2014 biarkan amalmu yang menentukan jalan mana yang menyambutmu.</div></div>
+      <button class="btn block" data-close style="margin-top:18px">Tutup</button></div>`);
+    return;
+  }
   let h=`<div class="tdetail" style="--mark:${col}">
     ${emblem(key)}
     <div class="nm">${esc(cat.title)}</div>
@@ -1350,17 +1370,11 @@ function openTitleSheet(key){
     <div class="tr">${esc(tc.tr)}</div>
     <div class="jalan">${esc(tc.jalan)}</div>`;
   if(isCurrent) h+=`<div class="badge"><span class="tag">Title bulan ini</span></div>`;
-  else if(!unlocked) h+=`<div class="badge"><span class="tag est">Belum terbuka</span></div>`;
   h+=`<div class="tquote"><div class="q">${esc(tc.quote)}</div><div class="src">\u2014 ${esc(tc.qsrc)}</div></div>`;
-  if(unlocked){
-    h+=`<div class="tdesc">${tc.desc.map(p=>`<p>${esc(p)}</p>`).join('')}</div>`;
-    h+=`<div class="tsec-h">Amalan Khas</div><ul class="tlist">${tc.amalan.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`;
-    h+=`<div class="tsec-h">Nilai Utama</div><div class="tnilai"><div class="vt">${esc(tc.nilaiT)}</div><div class="vd">${esc(tc.nilaiD)}</div></div>`;
-    h+=`<div class="tsec-h">Keutamaan Ibadah</div><ul class="tlist" style="--mark:var(--gold)">${tc.keutamaan.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>`;
-  } else {
-    h+=`<div class="tlock"><div class="h">Jalan yang menanti</div>
-      <div class="p">Artefak ini tersingkap ketika <b>${esc(cat.t)}</b> menjadi ibadah paling dominan di akhir sebuah bulan Hijriah. Saat itu, kisah lengkap jalan ini akan terbuka dan menjadi milikmu selamanya.</div></div>`;
-  }
+  h+=`<div class="tdesc">${tc.desc.map(p=>`<p>${esc(p)}</p>`).join('')}</div>`;
+  h+=`<div class="tsec-h">Amalan Khas</div><ul class="tlist">${tc.amalan.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`;
+  h+=`<div class="tsec-h">Nilai Utama</div><div class="tnilai"><div class="vt">${esc(tc.nilaiT)}</div><div class="vd">${esc(tc.nilaiD)}</div></div>`;
+  h+=`<div class="tsec-h">Keutamaan Ibadah</div><ul class="tlist" style="--mark:var(--gold)">${tc.keutamaan.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>`;
   h+=`<button class="btn block" data-close style="margin-top:18px">Tutup</button></div>`;
   openSheet(h);
 }

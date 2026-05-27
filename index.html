@@ -892,9 +892,11 @@ function renderSet(){
     for(const lm of LOCK_MONTHS){
       const key=hy+'-'+lm.hm; const locked=S.locks[key];
       const est=addDays(h2gRaw(hy,lm.hm,1), -off);
+      const ref=locked?fromISO(locked):est;
+      if(daysFromToday(ref)<0 && !locked) continue;   // sembunyikan slot yang sudah lewat & belum dikunci
       h+=`<div class="lockcard">
-        <div class="top"><div><div class="nm">${esc(lm.nm)}</div>
-          <div class="st ${locked?'locked':'est'}">${locked?('\u2713 Terkunci: '+esc(fmtGshort(fromISO(locked)))):('Perkiraan: '+esc(fmtGshort(est)))} \u00b7 ${hy} H</div></div></div>
+        <div class="top"><div><div class="nm">${esc(lm.nm)} \u00b7 ${hy} H</div>
+          <div class="st ${locked?'locked':'est'}">${locked?('\u2713 Terkunci: '+esc(fmtGshort(fromISO(locked)))):('Perkiraan: '+esc(fmtGshort(est)))}</div></div></div>
         <div class="actions">
           <button class="btn" data-lockset="${key}">${locked?'Ubah':'Kunci tanggal'}</button>
           ${locked?`<button class="btn ghost" data-lockclear="${key}">Hapus kunci</button>`:''}
@@ -1186,7 +1188,7 @@ function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
   v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
     <div class="crest tappable" data-titledetail="${p.title.key}" style="--crest-glow:${tc.c}33;--rank-c:${rk.c}">${emblem(p.title.key)}
       <div class="title-nm">${esc(tc.title)}</div>
-      <div class="title-sub">${p.title.key==='truth'?'Pencari yang sedang meniti':esc(tc.t)}</div>
+      <div class="title-sub">${p.title.key==='truth'?'Musafir dalam Perbaikan Diri':esc(tc.t)}</div>
       <div class="rankpill"><span class="gem"></span>${esc(rk.t)} Rank</div>
       <div class="crest-hint">Ketuk untuk membaca jalanmu</div></div>
     <div class="card">

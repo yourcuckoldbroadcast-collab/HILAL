@@ -5,7 +5,7 @@
    - Instalasi tahan-banting: satu aset hilang TIDAK membatalkan SW
      (pakai allSettled, bukan addAll yang semua-atau-gagal).
    Bump CACHE setiap rilis untuk membersihkan cache lama. */
-const CACHE = 'hilal-v11';
+const CACHE = 'hilal-v12';
 const CORE  = ['./', './index.html'];
 const EXTRA = [
   './manifest.webmanifest',
@@ -14,7 +14,14 @@ const EXTRA = [
   './icon-maskable-512.png',
   './apple-touch-icon.png',
   './favicon-64.png',
-  './emblem-truth.png'
+  './emblem-truth.png',
+  './emblem-puasa.png',
+  './emblem-shalat.png',
+  './emblem-qiyamul.png',
+  './emblem-dzikir.png',
+  './emblem-tilawah.png',
+  './emblem-infaq.png',
+  './emblem-majelis.png'
 ];
 
 self.addEventListener('install', (e) => {

@@ -1081,9 +1081,9 @@ function emblemSym(key,col){
    Key harus cocok dengan key kategori. File diletakkan di folder yang sama dgn index.html.
    Jika sebuah key TIDAK ada di sini, otomatis pakai emblem SVG bawaan. */
 const EMBLEM_IMG = {
-  truth:'./emblem-truth.png'
-  // puasa:'./emblem-puasa.png', shalat:'./emblem-shalat.png', qiyamul:'./emblem-qiyamul.png',
-  // dzikir:'./emblem-dzikir.png', tilawah:'./emblem-tilawah.png', infaq:'./emblem-infaq.png', majelis:'./emblem-majelis.png'
+  truth:'./emblem-truth.png',
+  puasa:'./emblem-puasa.png', shalat:'./emblem-shalat.png', qiyamul:'./emblem-qiyamul.png',
+  dzikir:'./emblem-dzikir.png', tilawah:'./emblem-tilawah.png', infaq:'./emblem-infaq.png', majelis:'./emblem-majelis.png'
 };
 function emblem(key,cls){
   if(EMBLEM_IMG[key]) return `<img class="em ${cls||''}" src="${EMBLEM_IMG[key]}" alt="" loading="lazy" decoding="async">`;

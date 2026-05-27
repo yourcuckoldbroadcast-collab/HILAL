@@ -576,6 +576,11 @@ function genEvents(){
       push({ id:'ab-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Puasa Ayyamul Bidh',
              ins:abIns, date:abAnchor, hijri:{hy:cy,hm:cm,hd:abDays[0]}, span:abSpan });
     }
+    // Shalat Tasbih: malam Jumat pertama (Kamis pertama) tiap bulan Hijriah
+    const tAdd=(4 - noon(d1).getDay() + 7) % 7;   // 4 = Kamis (malam Jumat)
+    push({ id:'tasbih-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Shalat Tasbih',
+           ins:'Shalat sunnah tasbih pada malam Jumat pertama bulan '+MH[cm-1]+' \u2014 utama dikerjakan di malam hari. Memberi poin untuk Shalat Sunnah sekaligus Qiyamul Lail.',
+           date:addDays(d1,tAdd), hijri:{hy:cy,hm:cm,hd:1+tAdd} });
     cm++; if(cm>12){cm=1;cy++;}
   }
   // weekly: kejadian terdekat; puasa Senin/Kamis melompati hari yang diharamkan berpuasa
@@ -1241,20 +1246,24 @@ function occursOn(c,g){ g=noon(g);
   return false; }
 function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.getDay(); const ff=fastingForbidden(h); const out=[];
   const add=(id,cat,t)=>out.push({key:id+'@'+toISO(g),cat,t,day:toISO(g)});
+  const addDual=(id,cat,also,t)=>out.push({key:id+'@'+toISO(g),cat,also,t,day:toISO(g)});
   if(!ff){ if(day===1)add('sys-senin','puasa','Puasa Senin'); if(day===4)add('sys-kamis','puasa','Puasa Kamis');
     if([13,14,15].includes(h.hd)&&!(h.hm===12&&h.hd===13))add('sys-ab','puasa','Puasa Ayyamul Bidh');
     if(h.hm===12&&h.hd===9)add('sys-arafah','puasa','Puasa Arafah');
     if(h.hm===1&&h.hd===9)add('sys-tasua','puasa','Puasa Tasua'); if(h.hm===1&&h.hd===10)add('sys-asyura','puasa','Puasa Asyura');
     if(h.hm===10 && h.hd>=2 && out.every(o=>o.cat!=='puasa')) add('sys-syawal','puasa','Puasa Syawal'); }
   if(day===5) add('sys-kahfi','tilawah','Baca Surah Al-Kahfi');
+  if(day===4 && h.hd<=7) addDual('sys-tasbih','shalat','qiyamul','Shalat Tasbih');   // malam Jumat pertama bulan Hijriah
+  if(sameDay(g,noon(new Date()))) add('sys-subuh','infaq','Sedekah Subuh');           // hanya hari ini, tanpa penanda kalender
   for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g)}); }
   return out; }
 function syawalCount(){ const hy=g2h(new Date()).hy; const s={};
   for(const k in S.profile.track){ const r=S.profile.track[k]; if(r&&r.s==='done'&&r.c==='puasa'){ const hh=g2h(fromISO(r.d)); if(hh.hm===10&&hh.hy===hy) s[r.d]=1; } }
   return Object.keys(s).length; }
-function setTrack(key,cat,dayISO,state){ const cur=trkState(key);
-  if(cur===state){ delete S.profile.track[key]; }
-  else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO); }
+function setTrack(key,cat,dayISO,state,also){ const cur=trkState(key); const ak=also?(key+'|'+also):null;
+  if(cur===state){ delete S.profile.track[key]; if(ak) delete S.profile.track[ak]; }
+  else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO);
+    if(ak){ S.profile.track[ak]={s:state,c:also,d:dayISO}; if(state==='done') questProgress(also,dayISO); } }
   if(S.profile.started) titleSync();
   save(); }
 function questProgress(cat,dayISO){ if(!S.profile.started) return; if(dayISO!==toISO(new Date())) return;
@@ -1299,10 +1308,15 @@ function pieSVG(tally){ const entries=CATS.map(c=>({c,n:tally[c.k]||0})).filter(
   return `<svg width="128" height="128" viewBox="0 0 128 128">${paths}<circle cx="${cx}" cy="${cy}" r="26" fill="var(--bg)"/></svg>`; }
 
 /* ---------- render Profil ---------- */
-function trkControls(item){ const st=trkState(item.key); const cat=CATMAP[item.cat]?CATMAP[item.cat].t:item.cat;
-  return `<div class="chk-cat">Kategori: ${esc(cat)}</div><div class="trk">
-    <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done">\u2713</button>
-    <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip">\u2715</button></div>`; }
+function trkControls(item){ const st=trkState(item.key);
+  const cat=CATMAP[item.cat]?CATMAP[item.cat].t:item.cat;
+  const alsoAttr=item.also?` data-trackalso="${item.also}"`:'';
+  const catLabel=item.also
+    ? `Kategori: ${esc(cat)} + ${esc(CATMAP[item.also]?CATMAP[item.also].t:item.also)} <span style="color:var(--gold-hi)">\u00b7 poin ganda</span>`
+    : `Kategori: ${esc(cat)}`;
+  return `<div class="chk-cat">${catLabel}</div><div class="trk">
+    <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done"${alsoAttr}>\u2713</button>
+    <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip"${alsoAttr}>\u2715</button></div>`; }
 function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
   if(!S.profile.started){
     v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
@@ -1581,7 +1595,7 @@ document.addEventListener('click',e=>{
   if(t.dataset.questbegin){ startJourney(); return; }
   if(t.dataset.goto){ go(t.dataset.goto); return; }
   if(t.dataset.titledetail){ openTitleSheet(t.dataset.titledetail); return; }
-  if(t.dataset.track){ setTrack(t.dataset.track,t.dataset.trackcat,t.dataset.trackday,t.dataset.trackstate);
+  if(t.dataset.track){ setTrack(t.dataset.track,t.dataset.trackcat,t.dataset.trackday,t.dataset.trackstate,t.dataset.trackalso||null);
     if(tab==='cal') showCalDay(fromISO(t.dataset.trackday)); else render(); return; }
   if(t.dataset.dev){ devAction(t.dataset.dev); return; }
 });

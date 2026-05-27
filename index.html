@@ -293,7 +293,7 @@ textarea{ resize:vertical; min-height:64px; }
 .crest{ position:relative; overflow:hidden; text-align:center; padding:26px 20px 22px;
   background:radial-gradient(120% 120% at 50% -10%, var(--crest-glow,rgba(203,166,78,.22)), transparent 60%), linear-gradient(160deg,var(--surface-2),var(--surface));
   border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); margin-bottom:14px; }
-.crest .em{ width:96px; height:96px; margin:0 auto 12px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+.crest .em{ width:min(220px,60vw); height:min(220px,60vw); margin:2px auto 14px; filter:drop-shadow(0 12px 26px rgba(0,0,0,.55)); }
 .crest .title-nm{ font-family:var(--serif); font-size:27px; color:var(--cream); line-height:1.1; }
 .crest .title-sub{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-top:5px; }
 .crest .rankpill{ display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:7px 15px; border-radius:999px;
@@ -949,7 +949,7 @@ function rankOf(s){ return RANKS[rankIndex(s)]; }
 /* ---------- konten title (sumber: Konten_Profil_Title_HILAL) ---------- */
 const TITLE_CONTENT={
  truth:{
-  arab:"\u0633\u0627\u0644\u0643 \u0645\u0628\u062a\u062f\u0626", tr:"S\u0101lik Mubtadi", jalan:"Sang Pejalan yang Baru Meniti",
+  arab:"\u0633\u0627\u0644\u0643 \u0645\u0628\u062a\u062f\u0626", tr:"S\u0101lik Mubtadi", jalan:"Musafir dalam Perbaikan Diri",
   quote:"Dan orang-orang yang bersungguh-sungguh (mencari keridaan) Kami, benar-benar akan Kami tunjukkan kepada mereka jalan-jalan Kami.",
   qsrc:"Al-Qur'an, Al-'Ankabut: 69",
   desc:[

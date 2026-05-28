@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>HILAL — Almanak Ibadah</title>
+<meta name="description" content="Almanak Islam yang menyorot momentum ibadah terdekat berdasarkan kalender Hijriah. Offline-first, tanpa server." />
+<meta name="theme-color" content="#06140f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="HILAL" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<link rel="icon" href="./favicon-64.png" />
+<style>
+:root{
+  --bg:#071f18; --bg2:#05120d;
+  --surface:#0c3025; --surface-2:#0f3a2d; --surface-3:#124235;
+  --line:rgba(203,166,78,.16); --line-soft:rgba(242,233,216,.07);
+  --emerald:#1b5e47; --teal:#0f5c57;
+  --gold:#cba64e; --gold-hi:#e6cd92; --gold-soft:rgba(203,166,78,.13);
+  --cream:#f3ebd9; --cream-2:#cbd5c7; --muted:#86a092; --muted-2:#5d7568;
+  --danger:#c98a6a;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --shadow:0 18px 50px -20px rgba(0,0,0,.7);
+  --radius:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans); color:var(--cream); background:var(--bg2);
+  min-height:100vh; min-height:100dvh; -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, rgba(27,94,71,.55), transparent 60%),
+    radial-gradient(90% 60% at 85% 5%, rgba(15,92,87,.32), transparent 55%),
+    radial-gradient(60% 40% at 12% 30%, rgba(203,166,78,.06), transparent 60%);
+  background-attachment:fixed;
+}
+body::before{ /* faint star field */
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:.5; z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 18%, rgba(242,233,216,.6), transparent),
+    radial-gradient(1px 1px at 70% 12%, rgba(242,233,216,.45), transparent),
+    radial-gradient(1px 1px at 42% 28%, rgba(203,166,78,.5), transparent),
+    radial-gradient(1px 1px at 88% 22%, rgba(242,233,216,.4), transparent),
+    radial-gradient(1px 1px at 12% 42%, rgba(242,233,216,.3), transparent);
+}
+.wrap{ position:relative; z-index:1; max-width:480px; margin:0 auto; min-height:100dvh;
+  display:flex; flex-direction:column; padding:0 16px;
+  padding-top:max(14px,env(safe-area-inset-top));
+  padding-bottom:calc(86px + env(safe-area-inset-bottom)); }
+
+/* ---------- top bar ---------- */
+.topbar{ display:flex; align-items:center; justify-content:space-between; padding:6px 2px 14px; }
+.brand{ display:flex; align-items:center; gap:10px; }
+.brand .mark{ width:30px; height:30px; flex:none; }
+.brand h1{ font-family:var(--serif); font-weight:600; font-size:20px; letter-spacing:.32em; margin:0;
+  color:var(--cream); padding-left:.32em; }
+.topbar .today-mini{ text-align:right; font-family:var(--serif); }
+.today-mini .h{ font-size:14px; color:var(--gold-hi); letter-spacing:.02em; }
+.today-mini .g{ font-size:11px; color:var(--muted); letter-spacing:.04em; }
+
+/* ---------- view system ---------- */
+.view{ display:none; animation:rise .5s cubic-bezier(.2,.7,.2,1) both; }
+.view.active{ display:block; }
+@keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+.stagger>*{ animation:rise .55s cubic-bezier(.2,.7,.2,1) both; }
+.stagger>*:nth-child(1){animation-delay:.02s}
+.stagger>*:nth-child(2){animation-delay:.08s}
+.stagger>*:nth-child(3){animation-delay:.14s}
+.stagger>*:nth-child(4){animation-delay:.2s}
+.stagger>*:nth-child(5){animation-delay:.26s}
+.stagger>*:nth-child(6){animation-delay:.32s}
+
+/* ---------- today strip ---------- */
+.daystrip{ text-align:center; padding:6px 0 18px; }
+.daystrip .weekday{ font-family:var(--sans); font-size:12px; letter-spacing:.34em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:6px; }
+.daystrip .hijri{ font-family:var(--serif); font-size:34px; line-height:1.05; color:var(--cream); }
+.daystrip .hijri b{ color:var(--gold-hi); font-weight:600; }
+.daystrip .greg{ font-family:var(--serif); font-size:14px; color:var(--cream-2); margin-top:6px; font-style:italic; }
+
+/* ---------- cards ---------- */
+.card{ background:linear-gradient(160deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line); border-radius:var(--radius); padding:18px;
+  box-shadow:var(--shadow); margin-bottom:14px; }
+.section-title{ font-family:var(--sans); font-size:11px; letter-spacing:.28em; text-transform:uppercase;
+  color:var(--muted); margin:22px 4px 12px; display:flex; align-items:center; gap:10px; }
+.section-title::after{ content:""; flex:1; height:1px; background:var(--line-soft); }
+
+/* ---------- hero ---------- */
+.hero{ position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 120% at 88% -20%, rgba(203,166,78,.18), transparent 55%),
+    linear-gradient(155deg,#10463a,#0a2c23);
+  border:1px solid var(--line); border-radius:24px; padding:24px 22px 22px;
+  box-shadow:var(--shadow); }
+.hero .moon{ position:absolute; right:-26px; top:-30px; width:150px; height:150px; opacity:.9; }
+.hero .kicker{ font-size:11px; letter-spacing:.26em; text-transform:uppercase; color:var(--gold);
+  display:flex; align-items:center; gap:8px; }
+.hero .kicker .dot{ width:6px; height:6px; border-radius:50%; background:var(--gold);
+  box-shadow:0 0 0 0 rgba(203,166,78,.6); animation:pulse 2.4s infinite; }
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(203,166,78,.5)}70%{box-shadow:0 0 0 9px rgba(203,166,78,0)}100%{box-shadow:0 0 0 0 rgba(203,166,78,0)}}
+.hero h2{ font-family:var(--serif); font-size:30px; line-height:1.08; margin:14px 0 4px; max-width:78%; }
+.hero .hdate{ font-family:var(--serif); font-style:italic; color:var(--cream-2); font-size:14px; }
+.hero .count{ margin-top:18px; display:flex; align-items:baseline; gap:10px; }
+.hero .count .num{ font-family:var(--serif); font-size:46px; color:var(--gold-hi); line-height:1; font-weight:600; }
+.hero .count .lbl{ font-size:13px; color:var(--cream-2); letter-spacing:.04em; }
+.hero .insight{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line-soft);
+  font-size:13.5px; line-height:1.55; color:var(--cream-2); }
+.tag{ display:inline-block; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  padding:3px 8px; border-radius:999px; border:1px solid var(--line); color:var(--gold);
+  background:var(--gold-soft); }
+.tag.est{ color:var(--danger); border-color:rgba(201,138,106,.3); background:rgba(201,138,106,.1); }
+
+/* ---------- chips ---------- */
+.chips{ display:flex; gap:9px; flex-wrap:wrap; }
+.chip{ font-size:12px; padding:9px 13px; border-radius:999px; border:1px solid var(--line);
+  background:var(--surface); color:var(--cream); display:flex; align-items:center; gap:7px; cursor:pointer; }
+.chip .ic{ color:var(--gold); font-size:13px; }
+.chip:active{ transform:scale(.97); }
+
+/* ---------- feed ---------- */
+.toggle{ display:flex; background:var(--surface); border:1px solid var(--line); border-radius:999px;
+  padding:4px; gap:4px; }
+.toggle button{ flex:1; border:none; background:none; color:var(--muted); font-family:var(--sans);
+  font-size:12.5px; letter-spacing:.04em; padding:9px 8px; border-radius:999px; cursor:pointer; }
+.toggle button.on{ background:linear-gradient(160deg,var(--emerald),#134537); color:var(--cream);
+  box-shadow:0 4px 14px -6px rgba(0,0,0,.6); }
+.search{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
+  border-radius:13px; padding:0 13px; margin-bottom:12px; }
+.search svg{ width:17px; height:17px; flex:none; stroke:var(--muted); fill:none; stroke-width:1.8; stroke-linecap:round; }
+.search input{ flex:1; min-width:0; border:none; background:none; color:var(--cream); font-family:var(--sans); font-size:14px; padding:12px 0; outline:none; }
+.search input::placeholder{ color:var(--muted-2); }
+.evt{ display:flex; gap:14px; padding:15px 4px; border-bottom:1px solid var(--line-soft); cursor:pointer; }
+.evt:last-child{ border-bottom:none; }
+.evt .when{ flex:none; width:58px; text-align:center; }
+.evt .when .n{ font-family:var(--serif); font-size:24px; color:var(--gold-hi); line-height:1; }
+.evt .when .u{ font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:3px; }
+.evt .when.now .n{ font-size:13px; line-height:1.2; padding-top:5px; color:var(--gold); }
+.evt .body{ flex:1; min-width:0; }
+.evt .body .t{ font-family:var(--serif); font-size:17px; color:var(--cream); }
+.evt .body .m{ font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.evt .body .ins{ font-size:13px; line-height:1.5; color:var(--cream-2); margin-top:9px; display:none;
+  padding:11px 13px; background:rgba(0,0,0,.18); border-radius:12px; border:1px solid var(--line-soft); }
+.evt.open .ins{ display:block; }
+.cat-dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+.cat-weekly{ background:#6fae8f } .cat-monthly{ background:var(--teal) }
+.cat-annual{ background:var(--gold) } .cat-user{ background:#b98ad0 } .cat-season{ background:#d0a76a }
+.group-label{ font-family:var(--serif); font-size:13px; font-style:italic; color:var(--gold);
+  margin:18px 4px 2px; }
+
+/* ---------- banner ---------- */
+.banner{ background:linear-gradient(160deg,#3a3014,#241d0c); border:1px solid rgba(203,166,78,.35);
+  border-radius:16px; padding:16px; margin-bottom:14px; }
+.banner .h{ font-family:var(--serif); font-size:16px; color:var(--gold-hi); margin-bottom:4px; }
+.banner .p{ font-size:13px; color:var(--cream-2); line-height:1.5; }
+.banner .row{ display:flex; gap:9px; margin-top:13px; }
+.btn{ font-family:var(--sans); font-size:13px; padding:10px 15px; border-radius:11px; cursor:pointer;
+  border:1px solid var(--line); background:var(--surface); color:var(--cream); }
+.btn.primary{ background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; border-color:transparent; font-weight:600; }
+.btn.ghost{ background:none; }
+.btn:active{ transform:scale(.97); }
+.btn.block{ width:100%; }
+
+/* ---------- calendar ---------- */
+.cal-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.cal-head .cal-nav{ flex:0 0 44px; width:44px; height:44px; padding:0; border-radius:12px; border:1px solid var(--line);
+  background:var(--surface); color:var(--gold); font-size:24px; line-height:42px; text-align:center;
+  cursor:pointer; -webkit-user-select:none; user-select:none; }
+.cal-head .cal-nav:active{ background:var(--surface-3); }
+.cal-head .title{ flex:1 1 auto; min-width:0; text-align:center; font-family:var(--serif); }
+.cal-head .title .m{ font-size:20px; color:var(--cream); }
+.cal-head .title .y{ font-size:12px; color:var(--muted); letter-spacing:.1em; margin-top:2px; }
+.today-jump{ width:100%; margin:6px 0 14px; font-size:12.5px; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-grid .dow{ text-align:center; font-size:10px; letter-spacing:.06em; color:var(--muted);
+  padding:4px 0 8px; text-transform:uppercase; }
+.cell{ aspect-ratio:1; border-radius:11px; border:1px solid transparent; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:pointer; position:relative; background:rgba(255,255,255,.015); overflow:hidden; }
+.cell .hd{ font-family:var(--serif); font-size:16px; color:var(--cream); line-height:1; }
+.cell .gd{ font-size:8.5px; color:var(--muted-2); margin-top:2px; }
+.cell.muted{ opacity:.3; }
+.cell.muted .hd{ color:var(--muted); }
+.cell.sel{ background:linear-gradient(160deg,var(--emerald),#0e3a2d); border-color:var(--line); }
+.cell.sacred{ background:linear-gradient(160deg,rgba(150,118,214,.16),rgba(108,84,160,.08)); border-color:rgba(168,138,224,.30); }
+.cell.sacred .hd{ color:#d9c8f5; }
+.cell.sacred .gd{ color:#9f8fc8; }
+.cell.sacred-odd{ background:radial-gradient(125% 120% at 50% 18%,rgba(176,144,232,.40),rgba(96,70,150,.20)); border-color:rgba(196,166,244,.55);
+  box-shadow:0 0 18px -5px rgba(150,112,222,.55), inset 0 0 0 1px rgba(206,178,248,.16); }
+.cell.sacred-odd .hd{ color:#f1e8ff; font-weight:600; }
+.cell.sacred-odd .gd{ color:#c3b2e8; }
+.cell.sacred-odd::after{ content:"\2726"; position:absolute; top:3px; right:5px; font-size:8px; line-height:1; color:var(--gold-hi); opacity:.9; }
+.chip.sacred{ border-color:rgba(190,162,240,.42); background:rgba(150,118,214,.14); color:#e7dcfa; }
+.chip.sacred .ic{ color:#c4a8f0; }
+.sacred-note{ font-size:12.5px; line-height:1.55; color:#cdbdf0; background:linear-gradient(160deg,rgba(150,118,214,.16),rgba(108,84,160,.08));
+  border:1px solid rgba(168,138,224,.3); border-radius:12px; padding:11px 13px; margin-bottom:12px; }
+.sacred-note.odd{ color:#efe6ff; border-color:rgba(196,166,244,.5); background:radial-gradient(140% 130% at 0% 0%,rgba(176,144,232,.26),rgba(96,70,150,.12)); }
+.sacred-note b{ color:var(--gold-hi); }
+.cell.forbidden::before{ content:""; position:absolute; top:5px; left:5px; width:5px; height:5px; border-radius:50%; background:var(--danger); }
+.cell.today.forbidden::before{ background:#7a2e12; }
+.forbidden-note{ font-size:12.5px; line-height:1.55; color:#e8b69e; background:rgba(201,138,106,.12);
+  border:1px solid rgba(201,138,106,.34); border-radius:12px; padding:11px 13px; margin-bottom:12px; }
+.cell.today{ background:linear-gradient(160deg,var(--gold-hi),var(--gold)); border-color:var(--gold-hi);
+  box-shadow:0 2px 8px -4px rgba(203,166,78,.5); }
+.cell.today .hd{ color:#241d0c; font-weight:600; }
+.cell.today .gd{ color:#5c4a1c; }
+.cell.today::after{ content:none; }
+.cell.today.sacred-odd{ box-shadow:0 2px 8px -4px rgba(203,166,78,.5), 0 0 0 2px rgba(190,158,238,.6); }
+.cell .ev-dot{ position:absolute; bottom:5px; width:5px; height:5px; border-radius:50%; background:var(--gold); }
+.cell.today .ev-dot{ background:#241d0c; }
+.cell.muted .ev-dot{ opacity:.5; }
+.cal-detail{ margin-top:16px; }
+
+/* ---------- forms ---------- */
+.field{ margin-bottom:14px; }
+.field label{ display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:7px; }
+input[type=text],input[type=date],input[type=number],textarea,select{
+  width:100%; font-family:var(--sans); font-size:15px; color:var(--cream);
+  background:rgba(0,0,0,.22); border:1px solid var(--line); border-radius:12px; padding:12px 13px; }
+input:focus,textarea:focus,select:focus{ outline:none; border-color:var(--gold); }
+textarea{ resize:vertical; min-height:64px; }
+.seg{ display:flex; gap:7px; }
+.seg button{ flex:1; padding:11px 6px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); color:var(--muted); font-family:var(--sans); font-size:12.5px; cursor:pointer; }
+.seg button.on{ background:linear-gradient(160deg,var(--emerald),#134537); color:var(--cream); border-color:transparent; }
+
+/* ---------- settings ---------- */
+.set-row{ display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:15px 2px; border-bottom:1px solid var(--line-soft); }
+.set-row:last-child{ border-bottom:none; }
+.set-row .l .t{ font-size:15px; color:var(--cream); }
+.set-row .l .d{ font-size:12px; color:var(--muted); margin-top:3px; line-height:1.45; }
+.stepper{ display:flex; align-items:center; gap:0; border:1px solid var(--line); border-radius:11px; overflow:hidden; flex:none; }
+.stepper button{ width:40px; height:40px; border:none; background:var(--surface); color:var(--gold); font-size:20px; cursor:pointer; }
+.stepper .v{ width:46px; text-align:center; font-family:var(--serif); font-size:17px; color:var(--cream-2); }
+.lockcard{ border:1px solid var(--line-soft); border-radius:13px; padding:13px; margin-bottom:10px; background:rgba(0,0,0,.14); }
+.lockcard .top{ display:flex; justify-content:space-between; align-items:center; }
+.lockcard .nm{ font-family:var(--serif); font-size:16px; color:var(--cream); }
+.lockcard .st{ font-size:11.5px; margin-top:2px; }
+.lockcard .st.locked{ color:var(--gold-hi); } .lockcard .st.est{ color:var(--danger); }
+.lockcard .actions{ display:flex; gap:8px; margin-top:11px; }
+.muted-note{ font-size:12px; color:var(--muted); line-height:1.55; }
+
+/* ---------- empty ---------- */
+.empty{ text-align:center; padding:42px 20px; color:var(--muted); }
+.empty .mn{ width:54px; height:54px; opacity:.5; margin:0 auto 14px; }
+.empty .t{ font-family:var(--serif); font-size:17px; color:var(--cream-2); }
+.empty .d{ font-size:13px; margin-top:6px; line-height:1.5; }
+.fab{ position:fixed; right:max(18px,calc((100vw - 480px)/2 + 18px)); bottom:calc(96px + env(safe-area-inset-bottom));
+  width:56px; height:56px; border-radius:18px; border:none; z-index:20;
+  background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; font-size:32px; cursor:pointer;
+  box-shadow:0 14px 30px -10px rgba(0,0,0,.7); text-align:center; line-height:56px; padding:0; }
+.fab:active{ transform:scale(.94); }
+
+/* ---------- bottom nav ---------- */
+.nav{ position:fixed; left:0; right:0; bottom:0; z-index:30;
+  padding-bottom:env(safe-area-inset-bottom);
+  background:linear-gradient(0deg,var(--bg2),rgba(5,18,13,.86)); backdrop-filter:blur(14px);
+  border-top:1px solid var(--line-soft); }
+.nav .inner{ max-width:480px; margin:0 auto; display:flex; }
+.nav button{ flex:1; border:none; background:none; color:var(--muted-2); padding:11px 4px 12px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center; font-family:var(--sans); font-size:10px; letter-spacing:.06em; }
+.nav button svg{ width:22px; height:22px; margin:0 auto; stroke:currentColor; fill:none; stroke-width:1.6; }
+.nav button.on{ color:var(--gold-hi); }
+.nav button.on svg{ stroke:var(--gold-hi); }
+
+/* ---------- modal ---------- */
+.modal{ position:fixed; inset:0; z-index:50; display:none; align-items:flex-end; justify-content:center; }
+.modal.show{ display:flex; }
+.modal .scrim{ position:absolute; inset:0; background:rgba(2,8,6,.72); backdrop-filter:blur(3px); animation:fade .2s both; }
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{ position:relative; width:100%; max-width:480px; background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line); border-bottom:none; border-radius:24px 24px 0 0; padding:22px 18px calc(26px + env(safe-area-inset-bottom));
+  box-shadow:var(--shadow); animation:slideup .34s cubic-bezier(.2,.8,.2,1) both; max-height:88dvh; overflow:auto; }
+@keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
+.sheet .grab{ width:42px; height:4px; border-radius:99px; background:var(--line); margin:0 auto 18px; }
+.sheet h3{ font-family:var(--serif); font-size:21px; margin:0 0 16px; color:var(--cream); }
+.toast{ position:fixed; bottom:calc(104px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+  background:var(--surface-3); border:1px solid var(--line); color:var(--cream); font-size:13px;
+  padding:11px 17px; border-radius:99px; z-index:60; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+  transition:opacity .25s, transform .25s; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+.link{ color:var(--gold); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+/* ---------- profiling ---------- */
+.invite{ text-align:center; padding:18px 16px 6px; }
+.invite .em{ width:84px; height:84px; margin:6px auto 16px; }
+.invite h2{ font-family:var(--serif); font-size:24px; margin:0 0 10px; color:var(--cream); }
+.invite p{ font-size:13.5px; line-height:1.6; color:var(--cream-2); margin:0 auto 8px; max-width:330px; }
+.invite .muted-note{ max-width:330px; margin:6px auto 18px; }
+.crest{ position:relative; overflow:hidden; text-align:center; padding:26px 20px 22px;
+  background:radial-gradient(120% 120% at 50% -10%, var(--crest-glow,rgba(203,166,78,.22)), transparent 60%), linear-gradient(160deg,var(--surface-2),var(--surface));
+  border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); margin-bottom:14px; }
+.crest .em{ width:min(220px,60vw); height:min(220px,60vw); margin:2px auto 14px; filter:drop-shadow(0 12px 26px rgba(0,0,0,.55)); }
+.crest .title-nm{ font-family:var(--serif); font-size:27px; color:var(--cream); line-height:1.1; }
+.crest .title-sub{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-top:5px; }
+.crest .rankpill{ display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:7px 15px; border-radius:999px;
+  border:1px solid var(--line); background:rgba(0,0,0,.2); font-family:var(--serif); font-size:14px; color:var(--rank-c,var(--gold-hi)); }
+.crest .rankpill .gem{ width:11px; height:11px; border-radius:2px; transform:rotate(45deg); background:var(--rank-c,var(--gold)); }
+.bar{ height:8px; border-radius:999px; background:rgba(0,0,0,.28); overflow:hidden; margin:10px 0 6px; }
+.bar > i{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--rank-c,var(--gold)),var(--gold-hi)); }
+.bar-meta{ display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }
+.quest{ display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid var(--line-soft); }
+.quest:last-child{ border-bottom:none; }
+.quest .qx{ width:26px; height:26px; border-radius:8px; border:1px solid var(--line); flex:none; display:grid; place-items:center; font-size:14px; color:var(--muted); }
+.quest.done .qx{ background:linear-gradient(160deg,var(--gold),#a9863a); color:#241d0c; border-color:transparent; }
+.quest .qt{ flex:1; font-size:14px; color:var(--cream); }
+.quest.done .qt{ color:var(--muted); text-decoration:line-through; }
+.quest .qp{ font-size:11px; color:var(--gold); }
+.qnote{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.5; }
+.qnote.pen{ color:var(--danger); }
+.pie-wrap{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+.pie-wrap svg{ flex:none; }
+.legend{ flex:1; min-width:140px; display:flex; flex-direction:column; gap:7px; }
+.legend .lg{ display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--cream-2); }
+.legend .sw{ width:10px; height:10px; border-radius:3px; flex:none; }
+.legend .lv{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+.nudge{ font-size:13px; line-height:1.55; color:var(--cream-2); background:rgba(110,160,140,.1);
+  border:1px solid rgba(120,170,150,.22); border-radius:12px; padding:12px 14px; }
+.nudge b{ color:var(--gold-hi); }
+.arts{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.art{ text-align:center; }
+.art .em{ width:100%; aspect-ratio:1; }
+img.em{ object-fit:contain; }
+.art.locked .em{ opacity:.9; }
+.art .an{ font-size:10px; color:var(--muted); margin-top:5px; line-height:1.2; }
+.art.unlocked .an{ color:var(--cream-2); }
+.art{ cursor:pointer; transition:transform .12s; }
+.art:active{ transform:scale(.93); }
+/* ---------- title detail sheet ---------- */
+.crest.tappable{ cursor:pointer; transition:transform .12s; }
+.crest.tappable:active{ transform:scale(.99); }
+.crest-hint{ margin-top:16px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted);
+  display:flex; align-items:center; justify-content:center; gap:9px; }
+.crest-hint::before,.crest-hint::after{ content:""; width:20px; height:1px; background:var(--line); }
+.tdetail{ text-align:center; --mark:var(--gold); }
+.tdetail .em{ width:108px; height:108px; margin:0 auto 14px; filter:drop-shadow(0 10px 24px rgba(0,0,0,.55)); }
+.tdetail .nm{ font-family:var(--serif); font-weight:600; font-size:29px; line-height:1.08; color:var(--cream); }
+.tdetail .arab{ font-size:27px; line-height:1.55; color:var(--gold-hi); margin-top:14px; direction:rtl;
+  font-family:"Geeza Pro","Traditional Arabic","Scheherazade New","Noto Naskh Arabic",serif; }
+.tdetail .tr{ font-family:var(--serif); font-style:italic; font-size:14.5px; color:var(--cream-2); margin-top:6px; }
+.tdetail .jalan{ font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-top:8px; }
+.tdetail .badge{ margin-top:14px; }
+.tquote{ position:relative; text-align:left; margin:20px 2px 2px; padding:15px 17px 15px 19px;
+  border-left:2px solid var(--mark); border-radius:0 13px 13px 0;
+  background:linear-gradient(150deg,rgba(203,166,78,.13),transparent 92%); }
+.tquote .q{ font-family:var(--serif); font-style:italic; font-size:16px; line-height:1.6; color:var(--cream); }
+.tquote .src{ font-size:12px; color:var(--gold); margin-top:9px; }
+.tsec-h{ text-align:left; font-family:var(--sans); font-size:11px; letter-spacing:.26em; text-transform:uppercase;
+  color:var(--muted); margin:24px 2px 13px; display:flex; align-items:center; gap:11px; }
+.tsec-h::after{ content:""; flex:1; height:1px; background:var(--line-soft); }
+.tdesc{ text-align:left; margin-top:18px; }
+.tdesc p{ font-family:var(--serif); font-size:15.5px; line-height:1.72; color:var(--cream-2); margin:0 0 9px; }
+.tdesc p:last-child{ margin-bottom:0; }
+.tlist{ text-align:left; list-style:none; padding:0; margin:0; }
+.tlist li{ position:relative; padding:9px 2px 9px 22px; font-size:14px; line-height:1.5; color:var(--cream-2);
+  border-bottom:1px solid var(--line-soft); }
+.tlist li:last-child{ border-bottom:none; }
+.tlist li::before{ content:""; position:absolute; left:3px; top:15px; width:7px; height:7px; border-radius:2px;
+  transform:rotate(45deg); background:var(--mark); }
+.tnilai{ text-align:left; border:1px solid var(--line); border-radius:14px; padding:16px 17px;
+  background:linear-gradient(160deg,var(--surface-2),var(--surface)); }
+.tnilai .vt{ font-family:var(--serif); font-size:18px; color:var(--gold-hi); margin-bottom:8px; }
+.tnilai .vd{ font-size:13.5px; line-height:1.62; color:var(--cream-2); }
+.tlock{ text-align:left; border:1px solid var(--line); border-radius:14px; padding:16px 17px; margin:18px 0 2px;
+  background:rgba(0,0,0,.2); }
+.tlock .h{ font-family:var(--serif); font-size:16px; color:var(--cream); margin-bottom:7px; }
+.tlock .p{ font-size:13px; line-height:1.6; color:var(--muted); }
+.tlock .p b{ color:var(--cream-2); }
+/* requirement hints + renungan (artefak terkunci) */
+.treq{ text-align:left; list-style:none; padding:0; margin:0; }
+.treq li{ display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:9px 2px; border-bottom:1px solid var(--line-soft); font-size:13.5px; }
+.treq li:last-child{ border-bottom:none; }
+.treq li.reqlbl{ display:block; border-bottom:none; padding:12px 2px 2px; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.treq .rq{ color:var(--cream-2); }
+.treq .rp{ color:var(--muted); font-variant-numeric:tabular-nums; flex:none; }
+.treq li.met .rq{ color:var(--cream); }
+.treq li.met .rp{ color:#6fae8f; font-weight:600; }
+.reqalt{ text-align:left; font-size:12.5px; color:var(--muted); margin:9px 2px 0; line-height:1.55; }
+.reqalt b{ color:var(--cream-2); }
+.trenung{ text-align:left; font-family:var(--serif); font-style:italic; font-size:14.5px; line-height:1.66; color:var(--cream-2);
+  margin-top:20px; padding:14px 16px; border-left:2px solid var(--gold-soft); border-radius:0 12px 12px 0; background:rgba(0,0,0,.16); }
+/* bulan haram skin */
+.card.haram{ border-color:rgba(203,166,78,.5);
+  box-shadow:var(--shadow), 0 0 0 1px rgba(203,166,78,.16), 0 12px 44px -18px rgba(203,166,78,.45);
+  background:radial-gradient(120% 75% at 50% -8%, rgba(203,166,78,.16), transparent 60%), linear-gradient(160deg,var(--surface-2),var(--surface)); }
+.haram-note{ display:flex; gap:10px; font-size:12.5px; line-height:1.55; color:#ecd9a6;
+  background:linear-gradient(160deg,rgba(203,166,78,.16),rgba(203,166,78,.04)); border:1px solid rgba(203,166,78,.4);
+  border-radius:12px; padding:11px 13px; margin-top:12px; }
+.haram-note .hx{ flex:none; color:var(--gold-hi); font-size:15px; line-height:1.25; }
+.haram-note b{ color:var(--gold-hi); }
+/* puasa Syawal checklist */
+.banner.syawal{ cursor:pointer; }
+.syawal-pips{ display:flex; gap:8px; margin:11px 0 5px; }
+.syawal-pip{ width:23px; height:23px; border-radius:50%; border:1.5px solid rgba(203,166,78,.5); background:rgba(0,0,0,.2); display:grid; place-items:center; flex:none; }
+.syawal-pip.on{ background:linear-gradient(160deg,var(--gold),#a9863a); border-color:transparent; box-shadow:0 2px 8px -3px rgba(203,166,78,.6); }
+.syawal-pip.on::after{ content:"\2713"; color:#241d0c; font-size:12px; font-weight:700; line-height:1; }
+/* tracker controls */
+.trk{ display:inline-flex; gap:6px; margin-top:9px; }
+.trk button{ width:34px; height:30px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.18);
+  font-size:14px; cursor:pointer; color:var(--muted); display:grid; place-items:center; }
+.trk button.dn.on{ background:linear-gradient(160deg,#2e8b6f,#1c5e49); color:var(--cream); border-color:transparent; }
+.trk button.sk.on{ background:rgba(201,138,106,.22); color:var(--danger); border-color:rgba(201,138,106,.4); }
+.chk-cat{ font-size:11px; color:var(--muted); }
+.today-card .evt .body .t{ font-size:15px; }
+/* dev mode */
+.devlbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 8px; }
+.dev-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:7px; margin-bottom:4px; }
+.devbtn{ font-size:12px; padding:9px 6px; border-radius:9px; border:1px solid var(--line); background:rgba(0,0,0,.18); color:var(--cream-2); cursor:pointer; }
+.devbtn:active{ background:rgba(255,255,255,.06); }
+#devScore{ background:rgba(0,0,0,.2); border:1px solid var(--line); border-radius:9px; color:var(--cream); padding:9px 11px; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+        <path d="M64 18a34 34 0 1 0 0 64 27 27 0 1 1 0-64z" fill="#cba64e"/>
+        <path d="M70 30l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2-6.5-3.4-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1z" fill="#e6cd92"/>
+      </svg>
+      <h1>HILAL</h1>
+    </div>
+    <div class="today-mini" id="todayMini">
+      <div class="h" id="tmH">—</div>
+      <div class="g" id="tmG">—</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <section class="view active" id="v-home"></section>
+  <!-- CALENDAR -->
+  <section class="view" id="v-cal"></section>
+  <!-- CUSTOM -->
+  <section class="view" id="v-notes"></section>
+  <!-- PROFIL -->
+  <section class="view" id="v-profil"></section>
+  <!-- SETTINGS -->
+  <section class="view" id="v-set"></section>
+</div>
+
+<button class="fab" id="fab" style="display:none" aria-label="Tambah catatan">+</button>
+
+<nav class="nav"><div class="inner">
+  <button data-tab="home" class="on">
+    <svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/></svg>Beranda</button>
+  <button data-tab="cal">
+    <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg>Kalender</button>
+  <button data-tab="notes">
+    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M9 8h4"/></svg>Catatan</button>
+  <button data-tab="profil">
+    <svg viewBox="0 0 24 24"><path d="M12 3.5l2.3 4.7 5.2.8-3.75 3.65.9 5.15L12 15.9l-4.65 2.45.9-5.15L4.5 9l5.2-.8z"/></svg>Profil</button>
+  <button data-tab="set">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Atur</button>
+</div></nav>
+
+<div class="modal" id="modal"><div class="scrim" data-close></div><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   HILAL — Almanak Ibadah
+   Engine Hijriah (Umm al-Qura via Intl) + koreksi hari + lock
+   penetapan oleh user. Offline-first, data di localStorage.
+   ============================================================ */
+
+const MH = ['Muharram','Safar','Rabiul Awal','Rabiul Akhir','Jumadil Awal','Jumadil Akhir','Rajab',"Sya'ban",'Ramadhan','Syawal',"Dzulqa'dah",'Dzulhijjah'];
+const MG = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const DG = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const DGS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MS = 86400000;
+
+/* ---------- state ---------- */
+const DEFAULT = { settings:{ dayOffset:0, feedMode:'countdays' }, locks:{}, custom:[], dismissed:{},
+  profile:{ started:false, startedAt:null, track:{}, score:0,
+    title:{key:'truth',hy:null,hm:null}, artifacts:['truth'],
+    q:{ day:null, batch:[], batchN:1, doneToday:0, exhausted:false, maxedStreak:0, penaltyUntil:null, lastDone:null } } };
+let S = load();
+function load(){ let s; try{ s=Object.assign(JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(localStorage.getItem('hilal')||'{}')); }catch(e){ s=JSON.parse(JSON.stringify(DEFAULT)); }
+  s.profile=Object.assign(JSON.parse(JSON.stringify(DEFAULT.profile)), s.profile||{});
+  s.profile.q=Object.assign(JSON.parse(JSON.stringify(DEFAULT.profile.q)), s.profile.q||{});
+  s.profile.track=s.profile.track||{}; if(!Array.isArray(s.profile.artifacts)) s.profile.artifacts=['truth'];
+  return s; }
+function save(){ try{ localStorage.setItem('hilal', JSON.stringify(S)); }catch(e){} }
+
+/* ---------- hijri engine ---------- */
+const FMT = new Intl.DateTimeFormat('en-US-u-ca-islamic-umalqura',{day:'numeric',month:'numeric',year:'numeric'});
+function noon(d){ const x=new Date(d); x.setHours(12,0,0,0); return x; }
+function addDays(d,n){ return new Date(noon(d).getTime()+n*MS); }
+function sameDay(a,b){ a=noon(a); b=noon(b); return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function daysFromToday(d){ return Math.round((noon(d)-noon(new Date()))/MS); }
+function toISO(d){ d=noon(d); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fromISO(s){ const [y,m,dd]=s.split('-').map(Number); return noon(new Date(y,m-1,dd)); }
+
+function g2hRaw(date){ const p=FMT.formatToParts(noon(date)); let o={}; for(const x of p){ if(x.type==='year')o.hy=+x.value; if(x.type==='month')o.hm=+x.value; if(x.type==='day')o.hd=+x.value; } return o; }
+function g2h(date){ return g2hRaw(addDays(date, S.settings.dayOffset||0)); }
+function h2gRaw(hy,hm,hd){
+  const epoch=new Date(Date.UTC(622,6,19));
+  const est=(hy-1)*354.367+(hm-1)*29.53+(hd-1);
+  let d=noon(new Date(epoch.getTime()+est*MS));
+  for(let i=0;i<8;i++){ const c=g2hRaw(d); const diff=(hy-c.hy)*354+(hm-c.hm)*29.53+(hd-c.hd); if(Math.abs(diff)<.5)break; d=addDays(d,Math.round(diff)); }
+  for(let s=-3;s<=3;s++){ const t=addDays(d,s); const c=g2hRaw(t); if(c.hy===hy&&c.hm===hm&&c.hd===hd) return t; }
+  return d;
+}
+function h2g(hy,hm,hd){
+  const key=hy+'-'+hm;
+  if(S.locks[key]) return addDays(fromISO(S.locks[key]), hd-1);     // lock = tanggal pasti dari user
+  return addDays(h2gRaw(hy,hm,hd), -(S.settings.dayOffset||0));
+}
+function fmtH(h){ return h.hd+' '+MH[h.hm-1]+' '+h.hy; }
+function fmtG(d){ d=noon(d); return DG[d.getDay()]+', '+d.getDate()+' '+MG[d.getMonth()]+' '+d.getFullYear(); }
+function fmtGshort(d){ d=noon(d); return d.getDate()+' '+MG[d.getMonth()].slice(0,3)+' '+d.getFullYear(); }
+
+/* ---------- event definitions ---------- */
+// lock=true => awal bulan ini termasuk penetapan resmi (isbat)
+const ANNUAL = [
+  {hm:1, hd:1,  key:'tahunbaru', t:'Tahun Baru Islam', ins:'Awal tahun Hijriah, memperingati hijrah Nabi ﷺ dari Makkah ke Madinah.'},
+  {hm:1, hd:9,  key:'tasua',     t:'Puasa Tasua',      ins:'Puasa sunnah pada 9 Muharram, mengiringi puasa Asyura.'},
+  {hm:1, hd:10, key:'asyura',    t:'Puasa Asyura',     ins:'Puasa sunnah yang sangat dianjurkan pada 10 Muharram.'},
+  {hm:3, hd:12, key:'maulid',    t:'Maulid Nabi ﷺ',    ins:'Peringatan kelahiran Nabi Muhammad ﷺ.'},
+  {hm:7, hd:27, key:'isramiraj', t:"Isra Mi'raj",      ins:'Peringatan perjalanan malam Nabi ﷺ dan diterimanya perintah shalat.'},
+  {hm:8, hd:15, key:'nisfu',     t:"Nisfu Sya'ban",    ins:'Malam pertengahan Sya\u2019ban, sebagian memperbanyak ibadah sebagai persiapan Ramadhan.'},
+  {hm:9, hd:1,  key:'ramadhan',  t:'Awal Ramadhan',    lock:true, ins:'Awal bulan puasa wajib. Tanggal pastinya ditetapkan melalui rukyat / penetapan resmi.'},
+  {hm:9, hd:17, key:'nuzulul',   t:"Nuzulul Qur'an",   ins:'Diperingati sebagai waktu pertama turunnya Al-Qur\u2019an.'},
+  {hm:10,hd:1,  key:'idulfitri', t:'Idul Fitri',       lock:true, ins:'Hari raya setelah Ramadhan. Tanggalnya ditetapkan melalui penetapan resmi. Diharamkan berpuasa pada hari ini.'},
+  {hm:12,hd:1,  key:'dzulhijjah',t:'Awal Dzulhijjah',  lock:true, ins:'Memulai sepuluh hari pertama Dzulhijjah yang utama untuk amal saleh.'},
+  {hm:12,hd:9,  key:'arafah',    t:'Puasa Arafah',     ins:'Puasa sunnah utama bagi yang tidak sedang berhaji.'},
+  {hm:12,hd:10, key:'iduladha',  t:'Idul Adha',        ins:'Hari raya kurban. Diharamkan berpuasa pada hari ini dan pada hari Tasyrik (11\u201313 Dzulhijjah).'},
+];
+const LOCK_MONTHS = [ {hm:9,nm:'Awal Ramadhan'}, {hm:10,nm:'Idul Fitri (1 Syawal)'}, {hm:12,nm:'Awal Dzulhijjah'} ];
+const WEEKLY = [
+  {wd:1, t:'Puasa Senin', ins:'Hari Senin dianjurkan berpuasa sunnah.'},
+  {wd:4, t:'Puasa Kamis', ins:'Hari Kamis dianjurkan berpuasa sunnah; malam harinya adalah malam Jumat.'},
+  {wd:5, t:'Baca Surah Al-Kahfi', ins:'Hari Jumat adalah hari paling utama dalam sepekan \u2014 dianjurkan membaca surah Al-Kahfi dan memperbanyak shalawat.'},
+];
+
+function isLockedMonth(hy,hm){ return !!S.locks[hy+'-'+hm]; }
+
+/* ---------- generate events ---------- */
+function genEvents(){
+  const today = noon(new Date());
+  const back = addDays(today,-1);
+  const horizon = addDays(today,380);
+  const out=[];
+  const push=(o)=>{ if(o.date>=back && o.date<=horizon) out.push(o); };
+  const th = g2h(today);
+
+  // annual
+  for(let hy=th.hy; hy<=th.hy+1; hy++){
+    for(const d of ANNUAL){
+      const date=h2g(hy,d.hm,d.hd);
+      const est = d.lock && !isLockedMonth(hy,d.hm);
+      // arafah/adha depend on dzulhijjah lock
+      const depEst = (d.hm===12 && (d.hd===9||d.hd===10) && !isLockedMonth(hy,12));
+      push({ id:'a-'+d.key+'-'+hy, source:'system', cat:'annual', t:d.t, ins:d.ins,
+             date, hijri:{hy,hm:d.hm,hd:d.hd}, est: est||depEst });
+    }
+  }
+  // monthly (awal bulan + ayyamul bidh) for 13 hijri months
+  let cy=th.hy, cm=th.hm;
+  for(let i=0;i<13;i++){
+    const d1=h2g(cy,cm,1);
+    push({ id:'m1-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Awal '+MH[cm-1],
+           ins:'Pergantian bulan Hijriah \u2014 momen memperbarui niat dan amalan.',
+           date:d1, hijri:{hy:cy,hm:cm,hd:1} });
+    const abDays=[13,14,15].filter(dd=> !fastingForbidden({hm:cm,hd:dd}));
+    if(abDays.length){
+      const abAnchor=h2g(cy,cm,abDays[0]);
+      const abSpan=(abDays.length===3?'13\u201315':abDays.join(', '))+' '+MH[cm-1];
+      const abIns=(cm===12)
+        ? 'Puasa "hari-hari putih". Di Dzulhijjah hanya 14\u201315, karena 13 termasuk hari Tasyrik yang diharamkan berpuasa.'
+        : 'Puasa tiga hari di pertengahan bulan (13, 14, 15) \u2014 "hari-hari putih".';
+      push({ id:'ab-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Puasa Ayyamul Bidh',
+             ins:abIns, date:abAnchor, hijri:{hy:cy,hm:cm,hd:abDays[0]}, span:abSpan });
+    }
+    // Shalat Tasbih: malam Jumat pertama (Kamis pertama) tiap bulan Hijriah
+    const tAdd=(4 - noon(d1).getDay() + 7) % 7;   // 4 = Kamis (malam Jumat)
+    push({ id:'tasbih-'+cy+'-'+cm, source:'system', cat:'monthly', t:'Shalat Tasbih',
+           ins:'Shalat sunnah tasbih pada malam Jumat pertama bulan '+MH[cm-1]+' \u2014 utama dikerjakan di malam hari. Memberi poin untuk Shalat Sunnah sekaligus Qiyamul Lail.',
+           date:addDays(d1,tAdd), hijri:{hy:cy,hm:cm,hd:1+tAdd} });
+    cm++; if(cm>12){cm=1;cy++;}
+  }
+  // weekly: kejadian terdekat; puasa Senin/Kamis melompati hari yang diharamkan berpuasa
+  for(const w of WEEKLY){
+    let add=(w.wd - today.getDay()+7)%7;
+    let date=addDays(today,add);
+    if(w.wd===1 || w.wd===4){ let guard=0; while(fastingForbidden(g2h(date)) && guard<6){ date=addDays(date,7); guard++; } }
+    push({ id:'w-'+w.wd, source:'system', cat:'weekly', t:w.t, ins:w.ins, date, weekly:true });
+  }
+  // custom
+  for(const c of S.custom){
+    const occ = nextCustomOccurrence(c, today, horizon);
+    if(occ) push({ id:'u-'+c.id, source:'user', cat:'user', t:c.title, ins:c.note||'', date:occ,
+                   recurDesc: recurDesc(c), customId:c.id });
+  }
+  out.sort((a,b)=> a.date-b.date || prio(b)-prio(a));
+  return out;
+}
+function nextCustomOccurrence(c, today, horizon){
+  if(c.type==='once'){ const d=fromISO(c.date); return (d>=addDays(today,-1)&&d<=horizon)?d:null; }
+  if(c.type==='weekly'){ let add=(c.weekday - today.getDay()+7)%7; return addDays(today,add); }
+  if(c.type==='monthly'){
+    const t=noon(today); let y=t.getFullYear(), m=t.getMonth();
+    for(let i=0;i<2;i++){
+      const last=new Date(y,m+1,0).getDate(); const day=Math.min(c.monthday,last);
+      const d=noon(new Date(y,m,day));
+      if(d>=t) return d;
+      m++; if(m>11){m=0;y++;}
+    }
+  }
+  return null;
+}
+function recurDesc(c){
+  if(c.type==='weekly') return 'Setiap '+DG[c.weekday];
+  if(c.type==='monthly') return 'Setiap tanggal '+c.monthday;
+  return 'Sekali';
+}
+function prio(e){ return e.cat==='season'?5:e.cat==='annual'?4:e.cat==='monthly'?2:e.cat==='user'?3:1; }
+
+/* ---------- seasonal contexts ---------- */
+function sacredClass(h){ if(!h) return '';
+  if(h.hm===9 && h.hd>=21) return (h.hd%2===1)?'sacred-odd':'sacred';   // 10 malam terakhir Ramadhan
+  if(h.hm===12 && h.hd>=1 && h.hd<=10) return 'sacred';                 // 10 hari pertama Dzulhijjah (violet lembut)
+  if(h.hm===8 && h.hd===15) return 'sacred-odd';                        // Nisfu Sya'ban (highlight)
+  if(h.hm===8 && (h.hd===13||h.hd===14)) return 'sacred';              // Ayyamul Bidh Sya'ban (violet lembut)
+  return ''; }
+function isHaram(hm){ return hm===1||hm===7||hm===11||hm===12; }   // Muharram, Rajab, Dzulqa'dah, Dzulhijjah
+function fastingForbidden(h){ if(!h) return null; if(h.hm===10 && h.hd===1) return 'Idul Fitri'; if(h.hm===12 && h.hd===10) return 'Idul Adha'; if(h.hm===12 && h.hd>=11 && h.hd<=13) return 'Hari Tasyrik'; return null; }
+function cellClasses(h){ const a=[]; const s=sacredClass(h); if(s)a.push(s); if(fastingForbidden(h))a.push('forbidden'); return a.join(' '); }
+function seasons(){
+  const th=g2h(new Date()); const out=[];
+  if([1,7,11,12].includes(th.hm)) out.push({t:'Bulan Haram',ins:'Termasuk empat bulan yang dimuliakan: Dzulqa\u2019dah, Dzulhijjah, Muharram, dan Rajab.'});
+  if(th.hm===12 && th.hd<=10) out.push({t:'10 Hari Pertama Dzulhijjah',ins:'Hari-hari yang utama untuk memperbanyak amal saleh.'});
+  if(th.hm===9 && th.hd>=21) out.push({t:'Sepuluh Malam Terakhir Ramadhan',sacred:true,ins:'Malam-malam paling utama dalam setahun. Dianjurkan i\u2019tikaf dan memperbanyak ibadah; pada malam-malam ganjil diharap turunnya Lailatul Qadar.'});
+  if(th.hm===9) out.push({t:'Bulan Ramadhan',ins:'Bulan puasa, sabar, dan memperbanyak Al-Qur\u2019an.'});
+  if(th.hm===8) out.push({t:"Sya'ban \u2014 Persiapan Ramadhan",ins:'Bulan persiapan menuju Ramadhan; sebagian memperbanyak puasa sunnah.'});
+  return out;
+}
+
+/* ---------- isbat confirmation ---------- */
+function pendingConfirm(){
+  const today=noon(new Date()); const th=g2h(today);
+  for(let hy=th.hy; hy<=th.hy+1; hy++){
+    for(const lm of LOCK_MONTHS){
+      const key=hy+'-'+lm.hm;
+      if(S.locks[key]||S.dismissed['c'+key]) continue;
+      const est=addDays(h2gRaw(hy,lm.hm,1), -(S.settings.dayOffset||0));
+      const dd=daysFromToday(est);
+      if(dd>=0 && dd<=8) return {key,hy,hm:lm.hm,nm:lm.nm,est,dd};
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const $=(s,r=document)=>r.querySelector(s);
+const el=(h)=>{ const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstElementChild; };
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function whenLabel(d){ const n=daysFromToday(d); if(n===0)return{n:'Hari',u:'ini',now:true}; if(n===1)return{n:'Besok',u:'',now:true}; if(n<0)return{n:'Lalu',u:'',now:true}; return{n:String(n),u:'hari lagi'}; }
+
+const moonSVG='<svg class="moon" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="mg" cx="35%" cy="35%"><stop offset="0%" stop-color="#e6cd92"/><stop offset="100%" stop-color="#be9a44"/></radialGradient></defs><path d="M66 14a36 36 0 1 0 0 72 28 28 0 1 1 0-72z" fill="url(#mg)"/></svg>';
+
+let feedQuery='';
+function renderFeedArea(){
+  const area=$('#feedArea'); if(!area) return;
+  const events=genEvents();
+  const q=feedQuery.trim().toLowerCase();
+  if(q){
+    const res=events.filter(e=> daysFromToday(e.date)>=0 && (e.t||'').toLowerCase().includes(q));
+    area.innerHTML = res.length
+      ? `<div class="card">${res.map(evtRow).join('')}</div>`
+      : `<div class="card">${emptyInline('Tak ada momentum cocok dengan pencarianmu.')}</div>`;
+  } else {
+    const mode=S.settings.feedMode;
+    area.innerHTML=`<div class="toggle">
+        <button data-mode="countdays" class="${mode==='countdays'?'on':''}">Hitung Mundur</button>
+        <button data-mode="category" class="${mode==='category'?'on':''}">Terkategori</button>
+      </div><div class="card" id="feed">${mode==='countdays'?feedCountdays(events):feedCategory(events)}</div>`;
+  }
+}
+function renderHome(){
+  const v=$('#v-home'); const events=genEvents(); const ss=seasons();
+  // today strip
+  const th=g2h(new Date());
+  $('#tmH').textContent=th.hd+' '+MH[th.hm-1];
+  $('#tmG').textContent=fmtGshort(new Date());
+  let html='<div class="stagger">';
+  html+=`<div class="daystrip">
+    <div class="weekday">${DG[new Date().getDay()]}</div>
+    <div class="hijri"><b>${th.hd}</b> ${MH[th.hm-1]} <b>${th.hy}</b></div>
+    <div class="greg">${esc(fmtGshort(new Date()))} M</div>
+  </div>`;
+
+  // confirmation banner
+  const pc=pendingConfirm();
+  if(pc){
+    html+=`<div class="banner" data-confirm="${pc.key}">
+      <div class="h">${esc(pc.nm)} \u2014 sekitar ${pc.dd} hari lagi</div>
+      <div class="p">Perkiraan algoritma: <b>${esc(fmtGshort(pc.est))}</b>. Bila pemerintah/otoritas tempatmu sudah menetapkan tanggal resmi, kunci tanggalnya agar seluruh momentum di bulan ini ikut tepat.</div>
+      <div class="row">
+        <button class="btn primary" data-lockset="${pc.key}">Konfirmasi tanggal</button>
+        <button class="btn ghost" data-dismiss="${pc.key}">Pakai perkiraan</button>
+      </div>
+    </div>`;
+  }
+
+  // hero
+  const hero=pickHero(events);
+  if(hero){
+    const wl=whenLabel(hero.date);
+    html+=`<div class="hero">${moonSVG}
+      <div class="kicker"><span class="dot"></span>${wl.now&&wl.n==='Hari'?'Sedang berlangsung':'Momentum terdekat'}</div>
+      <h2>${esc(hero.t)}</h2>
+      <div class="hdate">${hero.span?esc(hero.span):(hero.hijri?esc(fmtH(hero.hijri)):esc(recurDesc2(hero)))} \u00b7 ${esc(fmtGshort(hero.date))}</div>
+      <div class="count"><span class="num">${wl.now?wl.n:wl.n}</span><span class="lbl">${wl.now?(wl.u||''):wl.u}${hero.est?'  \u00b7  ':''}${hero.est?'<span class="tag est">perkiraan</span>':''}</span></div>
+      ${hero.ins?`<div class="insight">${esc(hero.ins)}</div>`:''}
+    </div>`;
+  }
+
+  // event khusus: Puasa Sunnah Syawal (6 hari)
+  if(g2h(new Date()).hm===10){
+    const sc=syawalCount(), n=Math.min(sc,6);
+    const pips=Array.from({length:6},(_,i)=>`<span class="syawal-pip ${i<n?'on':''}"></span>`).join('');
+    html+=`<div class="banner syawal" data-goto="notes">
+      <div class="h">Puasa Sunnah Syawal \u2014 ${n}/6 hari</div>
+      <div class="syawal-pips">${pips}</div>
+      <div class="p">${sc>=6
+        ?'Enam hari telah genap \u2014 in sya Allah pahalanya seperti puasa setahun penuh. Semoga diterima.'
+        :'Enam hari puasa di bulan Syawal, boleh terpisah-pisah. Tandai puasamu di Catatan atau Kalender; semua puasa sunnah Syawal ikut terhitung.'}</div>
+    </div>`;
+  }
+
+  // seasonal chips
+  if(ss.length){
+    html+='<div class="section-title">Suasana spiritual</div><div class="chips">';
+    ss.forEach((s,i)=> html+=`<div class="chip ${s.sacred?'sacred':''}" data-season="${i}"><span class="ic">${s.sacred?'\u2726':'\u25c6'}</span>${esc(s.t)}</div>`);
+    html+='</div>';
+  }
+
+  // feed + pencarian
+  html+=`<div class="section-title">Momentum ibadah</div>
+    <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="feedSearch" type="search" inputmode="search" autocomplete="off" enterkeyhint="search" placeholder="Cari momentum\u2026 (mis. Arafah, Senin)" value="${esc(feedQuery)}"/></div>
+    <div id="feedArea"></div>`;
+
+  html+='</div>';
+  v.innerHTML=html;
+  renderFeedArea();
+  const si=$('#feedSearch'); if(si) si.oninput=()=>{ feedQuery=si.value; renderFeedArea(); };
+  $('#fab').style.display='none';
+}
+function recurDesc2(e){ return e.recurDesc||''; }
+
+function pickHero(events){
+  const today=noon(new Date());
+  const todays=events.filter(e=>sameDay(e.date,today)).sort((a,b)=>prio(b)-prio(a));
+  if(todays.length) return todays[0];
+  const ann=events.filter(e=>e.cat==='annual'&&daysFromToday(e.date)>=0&&daysFromToday(e.date)<=60);
+  if(ann.length) return ann[0];
+  return events.find(e=>daysFromToday(e.date)>=0)||events[0];
+}
+
+function evtRow(e){
+  const wl=whenLabel(e.date);
+  const meta=[];
+  if(e.span) meta.push(esc(e.span));
+  else if(e.hijri) meta.push(esc(fmtH(e.hijri)));
+  if(e.recurDesc) meta.push(esc(e.recurDesc));
+  meta.push(esc(fmtGshort(e.date)));
+  return `<div class="evt" data-evt="${e.id}">
+    <div class="when ${wl.now?'now':''}"><div class="n">${wl.n}</div><div class="u">${wl.u}</div></div>
+    <div class="body">
+      <div class="t">${esc(e.t)} ${e.est?'<span class="tag est">perkiraan</span>':''}</div>
+      <div class="m"><span class="cat-dot cat-${e.cat}"></span>${meta.join(' \u00b7 ')}</div>
+      ${e.ins?`<div class="ins">${esc(e.ins)}${e.source==='user'?' <span class="link" data-edit="'+e.customId+'">Ubah catatan</span>':''}</div>`:''}
+    </div>
+  </div>`;
+}
+function feedCountdays(events){
+  const list=events.filter(e=>daysFromToday(e.date)>=0).slice(0,40);
+  if(!list.length) return emptyInline('Belum ada momentum dalam jangkauan.');
+  return list.map(evtRow).join('');
+}
+function feedCategory(events){
+  const up=events.filter(e=>daysFromToday(e.date)>=0);
+  const groups=[['weekly','Pekan ini'],['monthly','Bulan Hijriah ini'],['annual','Tahunan mendatang'],['user','Catatan pribadi']];
+  let h='';
+  for(const [c,label] of groups){
+    const g=up.filter(e=>e.cat===c).slice(0, c==='annual'?8:6);
+    if(!g.length) continue;
+    h+=`<div class="group-label">${label}</div>`+g.map(evtRow).join('');
+  }
+  return h||emptyInline('Belum ada momentum dalam jangkauan.');
+}
+function emptyInline(t){ return `<div style="text-align:center;color:var(--muted);padding:24px 8px;font-size:13px">${esc(t)}</div>`; }
+
+/* ---------- calendar ---------- */
+let calMode='hijri';
+let calH=null; // {hy,hm}
+let calG=null; // {gy,gm} (gm 0-11)
+function initCalRefs(){ const th=g2h(new Date()); calH={hy:th.hy,hm:th.hm}; const t=noon(new Date()); calG={gy:t.getFullYear(),gm:t.getMonth()}; }
+function isCalToday(){ const t=noon(new Date()); if(calMode==='hijri'){ const th=g2h(new Date()); return calH.hy===th.hy&&calH.hm===th.hm; } return calG.gy===t.getFullYear()&&calG.gm===t.getMonth(); }
+
+function renderCal(){
+  const v=$('#v-cal');
+  if(!calH) initCalRefs();
+  const onToday=isCalToday();
+  const body = calMode==='hijri' ? calHijri() : calGreg();
+  const html=`<div class="stagger">
+    <div class="toggle" style="margin-bottom:14px">
+      <button data-calmode="hijri" class="${calMode==='hijri'?'on':''}">Hijriah</button>
+      <button data-calmode="greg" class="${calMode==='greg'?'on':''}">Masehi</button>
+    </div>
+    <div class="card ${body.haram?'haram':''}">
+      <div class="cal-head">
+        <button class="cal-nav" data-cal="-1" aria-label="Bulan sebelumnya">\u2039</button>
+        <div class="title">${body.title}</div>
+        <button class="cal-nav" data-cal="1" aria-label="Bulan berikutnya">\u203a</button>
+      </div>
+      ${onToday?'':`<button class="btn ghost today-jump" data-caltoday="1">\u21ba  Kembali ke hari ini</button>`}
+      <div class="cal-grid">${DGS.map(d=>`<div class="dow">${d}</div>`).join('')}${body.cells}</div>
+      ${body.note||''}
+    </div>
+    <div class="cal-detail" id="calDetail"></div>
+  </div>`;
+  v.innerHTML=html;
+  $('#fab').style.display='none';
+  showCalDay(onToday?noon(new Date()):null);
+}
+function cellHTML(g, mainNum, subLabel, isT, hasEv, sacred){
+  return `<div class="cell ${isT?'today':''} ${sacred||''}" data-date="${toISO(g)}"><div class="hd">${mainNum}</div><div class="gd">${subLabel}</div>${hasEv?'<span class="ev-dot"></span>':''}</div>`;
+}
+function calHijri(){
+  const {hy,hm}=calH;
+  const first=h2g(hy,hm,1);
+  let len=29; for(let d=29;d<=30;d++){ const c=g2h(addDays(first,d-1)); if(c.hm===hm&&c.hd===d) len=d; }
+  const startDow=noon(first).getDay();
+  const events=genEvents(); const today=noon(new Date());
+  let cells='';
+  for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow); const c=g2h(g);
+    cells+=`<div class="cell muted ${cellClasses(c)}" data-date="${toISO(g)}"><div class="hd">${c.hd}</div><div class="gd">${noon(g).getDate()}/${noon(g).getMonth()+1}</div></div>`; }
+  for(let d=1;d<=len;d++){ const g=h2g(hy,hm,d);
+    cells+=cellHTML(g, d, noon(g).getDate()+'/'+(noon(g).getMonth()+1), sameDay(g,today), events.some(e=>sameDay(e.date,g)), cellClasses({hm,hd:d})); }
+  const haram=isHaram(hm);
+  const haramNote=haram?`<div class="haram-note"><span class="hx">\u2726</span><div><b>Bulan Haram \u2014 ${MH[hm-1]}.</b> Salah satu bulan yang Allah muliakan. Keutamaan amal saleh dilipatgandakan dan dosa terasa lebih berat \u2014 perbanyak kebaikan, jagalah diri dari maksiat.</div></div>`:'';
+  const lockNote=isLockedMonth(hy,hm)?`<div class="muted-note" style="margin-top:12px">\u2713 Bulan ini memakai tanggal penetapan yang kamu kunci.</div>`:'';
+  return { title:`<div class="m">${MH[hm-1]}</div><div class="y">${hy} H</div>`, cells, haram,
+    note: haramNote+lockNote };
+}
+function calGreg(){
+  const {gy,gm}=calG;
+  const first=noon(new Date(gy,gm,1));
+  const len=new Date(gy,gm+1,0).getDate();
+  const startDow=first.getDay();
+  const events=genEvents(); const today=noon(new Date());
+  const sub=(g)=>{ const h=g2h(g); return h.hd===1?MH[h.hm-1].slice(0,3):h.hd; };
+  let cells='';
+  for(let i=0;i<startDow;i++){ const g=addDays(first,i-startDow);
+    cells+=`<div class="cell muted ${cellClasses(g2h(g))}" data-date="${toISO(g)}"><div class="hd">${noon(g).getDate()}</div><div class="gd">${sub(g)}</div></div>`; }
+  for(let d=1;d<=len;d++){ const g=noon(new Date(gy,gm,d));
+    cells+=cellHTML(g, d, sub(g), sameDay(g,today), events.some(e=>sameDay(e.date,g)), cellClasses(g2h(g))); }
+  const h1=g2h(first).hm, h2=g2h(noon(new Date(gy,gm,len))).hm; const haramAny=isHaram(h1)||isHaram(h2);
+  const haramNote=haramAny?`<div class="haram-note"><span class="hx">\u2726</span><div>Sebagian bulan ini termasuk <b>Bulan Haram</b> \u2014 perbanyak amal, jauhi dosa.</div></div>`:'';
+  return { title:`<div class="m">${MG[gm]}</div><div class="y">${gy} M</div>`, cells,
+    note: haramNote+`<div class="muted-note" style="margin-top:12px">Angka kecil = tanggal Hijriah; nama bulan muncul saat bulan Hijriah berganti.</div>` };
+}
+function showCalDay(date){
+  const wrap=$('#calDetail'); if(!wrap) return;
+  if(!date){ wrap.innerHTML=`<div class="muted-note" style="text-align:center;padding:8px">Ketuk tanggal untuk melihat momentumnya.</div>`; return; }
+  const g=noon(date); const h=g2h(g);
+  const events=genEvents().filter(e=> sameDay(e.date,g));
+  let html=`<div class="card"><div class="group-label" style="margin-top:0">${h.hd} ${MH[h.hm-1]} ${h.hy} H</div>
+    <div class="muted-note" style="margin-bottom:6px">${esc(fmtG(g))} M</div>`;
+  if(h.hm===9 && h.hd>=21){ const odd=h.hd%2===1;
+    html+= odd
+      ? `<div class="sacred-note odd">\u2726 <b>Malam ke-${h.hd}</b> \u2014 malam ganjil sepuluh hari terakhir yang diharap sebagai Lailatul Qadar. Perbanyak ibadah, doa, dan i\u2019tikaf.</div>`
+      : `<div class="sacred-note">Bagian dari sepuluh malam terakhir Ramadhan \u2014 perbanyak ibadah dan i\u2019tikaf.</div>`; }
+  if(h.hm===12 && h.hd>=1 && h.hd<=10){
+    html+=`<div class="sacred-note">Bagian dari <b>sepuluh hari pertama Dzulhijjah</b> \u2014 hari-hari yang amal salehnya paling dicintai Allah. Perbanyak takbir, dzikir, sedekah, dan puasa (kecuali pada hari raya).</div>`; }
+  if(h.hm===8 && h.hd===15){
+    html+=`<div class="sacred-note odd">\u2726 <b>Nisfu Sya\u2019ban</b> \u2014 malam pertengahan Sya\u2019ban; sebagian memperbanyak ibadah dan doa sebagai persiapan menyambut Ramadhan.</div>`; }
+  else if(h.hm===8 && (h.hd===13||h.hd===14)){
+    html+=`<div class="sacred-note">Ayyamul Bidh Sya\u2019ban \u2014 puasa \u201Chari-hari putih\u201D di bulan persiapan Ramadhan.</div>`; }
+  const ff=fastingForbidden(h);
+  if(ff) html+=`<div class="forbidden-note">\u2715 Diharamkan berpuasa pada hari ini \u2014 ${ff}.</div>`;
+  html+= events.length? events.map(evtRow).join('') : emptyInline('Tidak ada momentum khusus pada hari ini.');
+  if(S.profile.started){
+    const trk=trackablesOnDay(g); const past=noon(g)<=noon(new Date());
+    if(trk.length && past){
+      html+=`<div class="group-label">Tandai amalmu</div>`+
+        trk.map(it=>`<div class="evt" style="cursor:default"><div class="when"><div class="n" style="font-size:11px;line-height:1.2;padding-top:7px;color:var(--muted)">\u25cf</div></div><div class="body"><div class="t" style="font-size:15px">${esc(it.t)}</div>${trkControls(it)}</div></div>`).join('');
+    } else if(trk.length){ html+=`<div class="muted-note" style="margin-top:10px">Penanda amal aktif saat harinya tiba.</div>`; }
+  }
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+
+/* ---------- custom notes ---------- */
+function renderNotes(){
+  const v=$('#v-notes');
+  let h='<div class="stagger">';
+  if(S.profile.started){
+    const trk=trackablesOnDay(new Date());
+    h+='<div class="section-title">Amal hari ini</div>';
+    h+= trk.length
+      ? '<div class="card today-card">'+trk.map(it=>`<div class="evt" style="cursor:default"><div class="when"><div class="n" style="font-size:11px;line-height:1.2;padding-top:7px;color:var(--muted)">\u25cf</div></div><div class="body"><div class="t">${esc(it.t)}</div>${trkControls(it)}</div></div>`).join('')+'</div>'
+      : `<div class="card"><div class="muted-note">Tak ada amal terjadwal hari ini. Tambahkan ibadah rutin di bawah agar muncul di sini dan menjadi bagian perjalananmu.</div></div>`;
+  }
+  h+='<div class="section-title">Catatan pribadi</div>';
+  if(!S.custom.length){
+    h+=`<div class="empty">${moonSVGsmall()}<div class="t">Belum ada catatan</div>
+      <div class="d">Tambahkan pengingat pribadimu \u2014 sekali (mis. kajian tamu) atau berulang (mis. pengajian rutin pekanan).</div></div>`;
+  } else {
+    h+='<div class="card">';
+    S.custom.slice().sort((a,b)=>a.title.localeCompare(b.title)).forEach(c=>{
+      const occ=nextCustomOccurrence(c, noon(new Date()), addDays(new Date(),380));
+      h+=`<div class="evt" data-edit="${c.id}">
+        <div class="when"><div class="n" style="font-size:13px;line-height:1.2;padding-top:4px">${c.type==='once'?'1\u00d7':'\u21bb'}</div></div>
+        <div class="body"><div class="t">${esc(c.title)}</div>
+          <div class="m"><span class="cat-dot cat-user"></span>${esc(recurDesc(c))}${occ?' \u00b7 '+esc(fmtGshort(occ)):''}</div>
+          ${c.note?`<div class="m">${esc(c.note)}</div>`:''}
+        </div></div>`;
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  v.innerHTML=h;
+  $('#fab').style.display='grid';
+}
+function moonSVGsmall(){ return '<svg class="mn" viewBox="0 0 100 100"><path d="M66 14a36 36 0 1 0 0 72 28 28 0 1 1 0-72z" fill="#cba64e"/></svg>'; }
+
+/* ---------- settings ---------- */
+function renderSet(){
+  const v=$('#v-set'); const th=g2h(new Date()); const off=S.settings.dayOffset||0;
+  let h='<div class="stagger">';
+  // correction
+  h+=`<div class="section-title">Koreksi kalender</div>
+    <div class="card">
+      <div class="set-row">
+        <div class="l"><div class="t">Geser hari Hijriah</div>
+          <div class="d">Hari ini menurut HILAL: <b style="color:var(--gold-hi)">${th.hd} ${MH[th.hm-1]} ${th.hy}</b>. Jika berbeda dengan tanggal di tempatmu, geser \u00b1 hari.</div></div>
+        <div class="stepper"><button data-off="-1">\u2212</button><div class="v">${off>0?'+':''}${off}</div><button data-off="1">+</button></div>
+      </div>
+    </div>`;
+  // isbat locks
+  h+=`<div class="section-title">Tanggal penetapan</div>
+    <div class="card">
+      <div class="muted-note" style="margin-bottom:14px">Ramadhan, Idul Fitri, dan Idul Adha ditetapkan otoritas setempat \u2014 tak bisa dihitung pasti oleh algoritma. Kunci tanggal resminya di sini; seluruh momentum di bulan itu akan menyesuaikan. Cocok juga saat kamu sedang di luar negeri.</div>`;
+  for(let hy=th.hy; hy<=th.hy+1; hy++){
+    for(const lm of LOCK_MONTHS){
+      const key=hy+'-'+lm.hm; const locked=S.locks[key];
+      const est=addDays(h2gRaw(hy,lm.hm,1), -off);
+      const ref=locked?fromISO(locked):est;
+      if(daysFromToday(ref)<0 && !locked) continue;   // sembunyikan slot yang sudah lewat & belum dikunci
+      h+=`<div class="lockcard">
+        <div class="top"><div><div class="nm">${esc(lm.nm)} \u00b7 ${hy} H</div>
+          <div class="st ${locked?'locked':'est'}">${locked?('\u2713 Terkunci: '+esc(fmtGshort(fromISO(locked)))):('Perkiraan: '+esc(fmtGshort(est)))}</div></div></div>
+        <div class="actions">
+          <button class="btn" data-lockset="${key}">${locked?'Ubah':'Kunci tanggal'}</button>
+          ${locked?`<button class="btn ghost" data-lockclear="${key}">Hapus kunci</button>`:''}
+        </div>
+      </div>`;
+    }
+  }
+  h+='</div>';
+  // app
+  h+=`<div class="section-title">Aplikasi</div><div class="card">
+    <div class="set-row"><div class="l"><div class="t">Pasang ke layar utama</div><div class="d" id="installDesc">Jadikan HILAL seperti aplikasi biasa.</div></div>
+      <button class="btn primary" id="installBtn" disabled>Pasang</button></div>
+    <div class="set-row"><div class="l"><div class="t">Simpan data permanen</div><div class="d" id="persistDesc">Mencegah browser menghapus datamu saat penyimpanan penuh.</div></div>
+      <button class="btn" id="persistBtn">Aktifkan</button></div>
+    <div class="set-row"><div class="l"><div class="t">Tentang & sumber tanggal</div><div class="d">Cara kerja & catatan akurasi.</div></div>
+      <button class="btn ghost" id="aboutBtn">Lihat</button></div>
+  </div>`;
+  h+='</div>';
+  if(S._dev) h+=devPanel();
+  v.innerHTML=h;
+  $('#fab').style.display='none';
+  refreshInstallUI(); refreshPersistUI();
+}
+
+/* ============================================================
+   PROFILING (Fase 1)
+   ============================================================ */
+const CATS=[
+ {k:'puasa',  t:'Puasa Sunnah',       c:'#cba64e', title:'Silent Pilgrim'},
+ {k:'shalat', t:'Shalat Sunnah',      c:'#4a9d7a', title:'Veiled One'},
+ {k:'qiyamul',t:'Qiyamul Lail',       c:'#9d7ad4', title:'Dawn Sentinel'},
+ {k:'dzikir', t:'Dzikir Harian',      c:'#3a9ca8', title:'Soul Whisperer'},
+ {k:'tilawah',t:'Tilawah Al-Qur\u2019an', c:'#c98a5c', title:'Versekeeper'},
+ {k:'infaq',  t:'Infaq / Sedekah',    c:'#cf6f6f', title:'Benevolent Mark'},
+ {k:'majelis',t:'Majelis Ilmu',       c:'#8a9b5a', title:'Sagebound'},
+];
+const CATMAP=Object.fromEntries(CATS.map(c=>[c.k,c]));
+const TRUTH={k:'truth', t:'Awal langkah', c:'#b9a6df', title:'Truth Seeker'};
+const RANKS=[
+ {k:'ash',t:'Ash',min:0,c:'#8a8f88'},{k:'stone',t:'Stone',min:40,c:'#9a9488'},
+ {k:'bronze',t:'Bronze',min:100,c:'#b08d57'},{k:'silver',t:'Silver',min:200,c:'#c8ccd2'},
+ {k:'gold',t:'Gold',min:340,c:'#d9b441'},{k:'sapphire',t:'Sapphire',min:520,c:'#4f8fd6'},
+ {k:'emerald',t:'Emerald',min:760,c:'#2faa78'},{k:'obsidian',t:'Obsidian',min:1060,c:'#6b5fa0'},
+ {k:'ivory',t:'Ivory',min:1450,c:'#ece7d8'},{k:'celestial',t:'Celestial',min:2000,c:'#e6cd92'},
+];
+function rankIndex(s){ let i=0; for(let j=0;j<RANKS.length;j++) if(s>=RANKS[j].min) i=j; return i; }
+function rankOf(s){ return RANKS[rankIndex(s)]; }
+
+/* ============================================================
+   PROGRESI Fase 2b — hari-aktif per jalan + gerbang dependency
+   Mata uang: jumlah HARI berbeda sebuah jalan dijalankan (anti-grind:
+   satu hari = satu langkah, sebanyak apa pun amal hari itu). Permanen.
+   ============================================================ */
+const SILVER=3, GOLD=4, SAP=5;                       // indeks nama rank (RANKS)
+const PATH_TH={                                       // ambang hari-aktif per jalan: ash,stone,bronze,silver,gold,sapphire,emerald
+  _daily:[0,4,9,16,28,46,70],
+  puasa: [0,2,5,8,14,23,35],                          // kadens Sen-Kam + Ayyamul Bidh
+  majelis:[0,2,4,7,12,20,30]                          // kadens ~mingguan
+};
+const GDAYS=[0,12,30,70,130,220,340,500,720,1000];    // total hari-jalan -> rank global (RANKS[0..9])
+const GATE={
+  puasa:{tier:'root'}, dzikir:{tier:'root'}, tilawah:{tier:'root'},
+  shalat: {tier:'bridge', self:GOLD, dep:[['dzikir'],['tilawah']]},
+  infaq:  {tier:'bridge', self:GOLD, dep:[['puasa'],['dzikir']]},
+  majelis:{tier:'bridge', self:GOLD, dep:[['tilawah'],['dzikir','infaq']]},
+  qiyamul:{tier:'apex', self:SAP, needRoots:1, needBridges:2}
+};
+const RENUNGAN={
+  puasa:"Menahan diri adalah gerbang pertama \u2014 dari ego yang dijinakkan, banyak jalan lain bermula.",
+  dzikir:"Hati yang hidup mengingat-Nya adalah tanah; di atasnyalah ibadah-ibadah lain tumbuh berakar.",
+  tilawah:"Mendekat pada firman-Nya membuka mata untuk memahami jalan-jalan yang datang setelahnya.",
+  shalat:"Ruku\u2019 dan sujud menjadi perjumpaan, bukan sekadar gerak, ketika hati lebih dulu hidup berzikir atau lidah lebih dulu akrab dengan firman-Nya. Itulah mengapa khusyuk menanti kedalaman Dzikir atau Tilawah.",
+  infaq:"Tangan yang memberi paling bersih saat ego sudah dilatih lapar oleh puasa, atau hati sudah terbiasa hanya mengharap pandangan-Nya lewat zikir \u2014 sebab memberi tanpa keduanya rawan menjadi panggung diri.",
+  majelis:"Ilmu menjadi cahaya, bukan sekadar catatan, ketika berakar pada wahyu \u2014 atau ketika hati yang berzikir menuntunnya turun menjadi amal yang memberi. Maka ia menanti Tilawah, atau perpaduan Dzikir dan sedekah.",
+  qiyamul:"Malam yang dihidupkan adalah muara, bukan hulu. Ia menyatu hanya pada jiwa yang telah meniti banyak jalan di siang hari \u2014 sebab yang sanggup berdiri lama di hadapan-Nya dalam gelap, adalah yang telah belajar mengisi terang dengan beragam bakti."
+};
+function catName(c){ return (CATMAP[c]||{}).t||c; }
+function pathTh(c){ return PATH_TH[c]||PATH_TH._daily; }
+function pathDays(c){ const s={}; const T=S.profile.track||{}; for(const k in T){ const r=T[k]; if(r&&r.s==='done'&&r.c===c) s[r.d]=1; } return Object.keys(s).length; }
+function pathIdx(c){ const d=pathDays(c), th=pathTh(c); let i=0; for(let j=0;j<th.length;j++) if(d>=th[j]) i=j; return i; }
+function totalDays(){ let s=0; for(const c of CATS) s+=pathDays(c.k); return s; }
+function gIndex(){ const d=totalDays(); let i=0; for(let j=0;j<GDAYS.length;j++) if(d>=GDAYS[j]) i=j; return i; }
+function activeDaySet(){ const s={}; const T=S.profile.track||{}; for(const k in T){ const r=T[k]; if(r&&r.s==='done') s[r.d]=1; } return s; }
+function currentStreak(){ const s=activeDaySet(); const t=noon(new Date());
+  let start=s[toISO(t)]?t:(s[toISO(addDays(t,-1))]?addDays(t,-1):null); if(!start) return 0;
+  let n=0,d=start; while(s[toISO(d)]){ n++; d=addDays(d,-1); } return n; }
+function depMet(dep){ return dep.some(cl=>cl.every(c=>pathIdx(c)>=GOLD)); }
+function titleUnlocked(k){
+  if(k==='truth') return true;
+  if((S.profile.artifacts||[]).includes(k)) return true;          // sekali terbuka, permanen
+  const g=GATE[k]; if(!g) return false;
+  if(g.tier==='root') return pathIdx(k)>=GOLD || (pathIdx(k)>=SILVER && currentStreak()>=21);
+  if(g.tier==='bridge') return pathIdx(k)>=g.self && depMet(g.dep);
+  if(g.tier==='apex'){ const A=S.profile.artifacts||[];
+    const r=['puasa','dzikir','tilawah'].filter(x=>A.includes(x)).length;
+    const b=['shalat','infaq','majelis'].filter(x=>A.includes(x)).length;
+    return pathIdx(k)>=g.self && r>=g.needRoots && b>=g.needBridges; }
+  return false;
+}
+function evalUnlocks(){ if(!S.profile.started) return [];
+  const A=S.profile.artifacts; const added=[];
+  for(const k of ['puasa','dzikir','tilawah','shalat','infaq','majelis','qiyamul']){
+    if(!A.includes(k) && titleUnlocked(k)){ A.push(k); added.push(k); } }
+  return added;
+}
+function wornTitle(){ const A=S.profile.artifacts||[];
+  const tiers=[['qiyamul'],['shalat','infaq','majelis'],['puasa','dzikir','tilawah']];
+  for(const tier of tiers){ const own=tier.filter(k=>A.includes(k)); if(own.length){ own.sort((a,b)=>pathDays(b)-pathDays(a)); return own[0]; } }
+  return 'truth'; }
+
+/* ---------- konten title (sumber: Konten_Profil_Title_HILAL) ---------- */
+const TITLE_CONTENT={
+ truth:{
+  arab:"\u0633\u0627\u0644\u0643 \u0645\u0628\u062a\u062f\u0626", tr:"S\u0101lik Mubtadi", jalan:"Musafir dalam Perbaikan Diri",
+  quote:"Dan orang-orang yang bersungguh-sungguh (mencari keridaan) Kami, benar-benar akan Kami tunjukkan kepada mereka jalan-jalan Kami.",
+  qsrc:"Al-Qur'an, Al-'Ankabut: 69",
+  desc:[
+   "Kamu berada di awal jalan.",
+   "Belum ada satu amal yang menonjol menandai dirimu \u2014 dan itu bukan kekurangan, melainkan pintu yang masih terbuka lebar ke segala arah.",
+   "Kamu seorang pencari: hatimu telah memutuskan untuk bergerak mendekat, meski langkahmu masih meraba.",
+   "Kamu belum tahu jalan mana yang kelak paling hidup dalam dirimu \u2014 puasa, malam yang dihidupkan, zikir yang tak putus, atau memberi tanpa pamrih.",
+   "Maka untuk saat ini, tugasmu sederhana: meluruskan niat, dan melangkah.",
+   "Sebab setiap perjalanan besar bermula dari satu langkah kecil yang ikhlas, dan Dia menjanjikan petunjuk bagi siapa pun yang sungguh-sungguh mencari."],
+  amalan:["Meluruskan dan memperbarui niat","Mencoba beragam ibadah sunnah untuk menemukan yang paling lekat","Menjaga konsistensi amal kecil","Mempelajari dasar setiap ibadah","Berdoa memohon ditunjukkan jalan yang lurus"],
+  nilaiT:"Niat & Kesungguhan",
+  nilaiD:"Nilai dirimu di awal ini bukan pada banyaknya amal, melainkan pada ketulusan niat dan keberanian memulai langkah.",
+  keutamaan:["Setiap amal bergantung pada niatnya.","Allah menjanjikan petunjuk bagi yang bersungguh-sungguh mencari-Nya.","Langkah kecil yang istiqamah lebih dicintai daripada amal besar yang terputus.","Permulaan yang ikhlas adalah fondasi seluruh perjalanan.","Pintu kebaikan terbuka lebar bagi pemula yang jujur."]},
+ puasa:{
+  arab:"\u0637\u0631\u064a\u0642 \u0636\u0628\u0637 \u0627\u0644\u0646\u0641\u0633", tr:"\u1E6Car\u012Bq \u1E0Cab\u1E6D an-Nafs", jalan:"Jalan Sang Pengendali Diri",
+  quote:"Puasa adalah perisai.", qsrc:"Nabi Muhammad \uFDFA (HR Bukhari\u2013Muslim)",
+  desc:[
+   "Kamu adalah bagian dari mereka yang menempuh jalan kesabaran dalam diam.",
+   "Saat banyak orang mengejar kenyamanan, kamu memilih menahan diri demi mendekat kepada Allah.",
+   "Kamu melawan lapar, haus, hawa nafsu, dan keinginan hati \u2014 bukan dengan amarah, melainkan dengan keteguhan.",
+   "Kemenanganmu jarang terlihat manusia.",
+   "Namun setiap rasa lapar yang ditahan menjadi saksi perjalanan jiwamu.",
+   "Kamu tidak selalu dikenal karena kata-kata.",
+   "Tetapi karena ketenangan, kedisiplinan, dan kekuatan hati yang perlahan ditempa oleh puasa."],
+  amalan:["Puasa Senin & Kamis","Puasa Ayyamul Bidh","Puasa Daud","Puasa Arafah","Puasa Asyura","Menjaga lisan ketika berpuasa","Memperbanyak doa saat berbuka"],
+  nilaiT:"Pengendalian Diri",
+  nilaiD:"Nilai dirimu dibentuk oleh kesabaran, ketahanan, dan kemampuan menahan hawa nafsu demi sesuatu yang lebih tinggi.",
+  keutamaan:["Puasa memiliki pahala istimewa yang langsung Allah balas.","Orang yang berpuasa memiliki doa yang mustajab.","Puasa melemahkan hawa nafsu dan membersihkan hati.","Puasa menjadi pelindung dari keburukan.","Orang yang berpuasa memiliki kebahagiaan saat berbuka dan saat bertemu Rabb-nya."]},
+ shalat:{
+  arab:"\u0637\u0631\u064a\u0642 \u0627\u0644\u062e\u0634\u0648\u0639", tr:"\u1E6Car\u012Bq al-Khush\u016B\u02BF", jalan:"Jalan Kekhusyukan",
+  quote:"Aku tidak menemukan sesuatu yang lebih membantu urusan akhirat selain memperbanyak shalat.", qsrc:"Umar bin Khattab r.a.",
+  desc:[
+   "Kamu menempuh jalan yang paling sunyi: berdiri di hadapan Rabbmu saat tak seorang pun melihat.",
+   "Di antara kewajiban yang lima, kamu menyelipkan rakaat-rakaat tambahan \u2014 bukan untuk dilihat, melainkan untuk lebih dekat.",
+   "Sujudmu yang tersembunyi adalah percakapan yang tak butuh saksi; di sanalah kamu meletakkan beban, harap, dan air mata yang tak kau tunjukkan kepada siapa pun.",
+   "Kamu tahu shalat bukan sekadar gerak, melainkan kehadiran \u2014 dan kamu berusaha hadir, sekalipun pikiran kerap ingin pergi.",
+   "Orang mengenalmu tenang; mereka tak tahu ketenangan itu lahir dari berkali-kali kembali berdiri menghadap-Nya.",
+   "Di balik tabir itulah dirimu sesungguhnya ditempa."],
+  amalan:["Shalat rawatib (qabliyah & ba'diyah)","Shalat Dhuha","Shalat Tahajud","Shalat Witir","Shalat Tahiyatul Masjid & Istikharah","Menjaga kekhusyukan dan tuma'ninah"],
+  nilaiT:"Kekhusyukan",
+  nilaiD:"Nilai dirimu dibentuk oleh kehadiran hati di hadapan Allah, ketundukan yang tenang, dan ibadah yang kau jaga tetap tersembunyi antara kau dan Dia.",
+  keutamaan:["Shalat sunnah menyempurnakan kekurangan pada shalat wajib.","Memperbanyak sujud meninggikan derajat dan menghapus kesalahan.","Shalat malam dan Dhuha mendekatkan hamba kepada Rabbnya.","Ibadah yang tersembunyi lebih terjaga dari riya.","Shalat menjadi penolong dan penenang saat hati terasa sempit."]},
+ qiyamul:{
+  arab:"\u0637\u0631\u064a\u0642 \u0642\u064a\u0627\u0645 \u0627\u0644\u0644\u064a\u0644", tr:"\u1E6Car\u012Bq Qiy\u0101m al-Layl", jalan:"Jalan Menegakkan Malam",
+  quote:"Kemuliaan seorang mukmin terletak pada shalat malamnya.", qsrc:"Hasan al-Bashri ra\u1E25imahull\u0101h",
+  desc:[
+   "Saat dunia terlelap, kamu memilih bangun.",
+   "Ketika kebanyakan orang menyerah pada hangatnya pembaringan, kamu melipatnya demi berdiri di sepertiga malam yang sunyi.",
+   "Tak ada yang menyaksikan air matamu di waktu sahur selain Dia yang turun mendekat pada saat itu.",
+   "Kamu menjaga malam seperti penjaga yang setia \u2014 bukan karena diperintah manusia, melainkan karena hatimu tahu di jam-jam itu pintu langit terbuka lebih lebar.",
+   "Kantukmu adalah pengorbanan yang tak terlihat; letihmu esok hari adalah jejak perjumpaan yang kau rahasiakan.",
+   "Dari kesunyian itulah cahaya kemuliaanmu kau kumpulkan, sedikit demi sedikit."],
+  amalan:["Shalat Tahajud","Shalat Witir di akhir malam","Doa dan istighfar di waktu sahur","Tilawah dalam kesunyian malam","Menghidupkan sepuluh malam terakhir Ramadhan","Bangun bermunajat meski sebentar"],
+  nilaiT:"Kesungguhan dalam Sunyi",
+  nilaiD:"Nilai dirimu lahir dari kerelaan mengorbankan nyaman dan lelap demi berjumpa Allah di waktu ketika tak seorang pun melihat.",
+  keutamaan:["Shalat malam adalah kebiasaan orang-orang saleh sebelum kita.","Sepertiga malam terakhir adalah waktu yang penuh keberkahan dan pengabulan.","Qiyamul lail mendekatkan kepada Allah dan menjauhkan dari dosa.","Munajat di kesunyian menumbuhkan keikhlasan yang murni.","Ketenangan jiwa di siang hari berakar dari malam-malam yang dihidupkan."]},
+ dzikir:{
+  arab:"\u0637\u0631\u064a\u0642 \u0627\u0644\u0630\u0643\u0631", tr:"\u1E6Car\u012Bq adh-Dhikr", jalan:"Jalan Mengingat Allah",
+  quote:"Dunia adalah kegelapan, dan dzikir kepada Allah adalah cahayanya.", qsrc:"Ibnul Qayyim al-Jauziyyah ra\u1E25imahull\u0101h",
+  desc:[
+   "Kamu termasuk mereka yang tak pernah benar-benar sendirian.",
+   "Di tengah keramaian maupun sunyi, lisanmu tetap basah menyebut nama-Nya, dan hatimu pulang kepada-Nya berulang kali dalam sehari.",
+   "Kamu tak menunggu waktu khusus untuk mendekat \u2014 sebab bagimu, setiap tarikan napas adalah kesempatan mengingat.",
+   "Saat orang lain mengisi sepi dengan kebisingan, kamu mengisinya dengan zikir.",
+   "Gelisah yang datang kau jawab bukan dengan keluh, melainkan dengan menyebut Dia yang menggenggam segala urusan.",
+   "Dan perlahan ketenangan itu tumbuh \u2014 bukan karena keadaan membaik, melainkan karena hatimu telah menemukan tempat bersandar."],
+  amalan:["Dzikir pagi dan petang","Istighfar di sela waktu","Tasbih, tahmid, dan tahlil","Memperbanyak shalawat","Menjaga lisan tetap hidup dengan menyebut Allah"],
+  nilaiT:"Ketenangan Hati",
+  nilaiD:"Nilai dirimu tumbuh dari hati yang terpaut, kehadiran yang sadar, dan kedamaian yang lahir dari mengingat Allah di setiap keadaan.",
+  keutamaan:["Zikir menghidupkan hati dan menenangkan jiwa yang gelisah.","Allah mengingat hamba yang mengingat-Nya.","Amalan yang ringan di lisan, namun berat timbangannya.","Zikir menumbuhkan rasa selalu dekat dan diawasi dengan penuh kasih.","Menjadi cahaya dan pelindung di hari-hari yang gelap."]},
+ tilawah:{
+  arab:"\u0637\u0631\u064a\u0642 \u062a\u0644\u0627\u0648\u0629 \u0627\u0644\u0642\u0631\u0622\u0646", tr:"\u1E6Car\u012Bq Til\u0101wat al-Qur\u02BE\u0101n", jalan:"Jalan Membaca Al-Qur'an",
+  quote:"Tidak ada yang lebih aku sesali selain hari ketika aku tidak menambah hafalan Al-Qur'anku.", qsrc:"Imam az-Zuhri ra\u1E25imahull\u0101h",
+  desc:[
+   "Bagimu, Al-Qur'an bukan bacaan yang ditinggalkan setelah khatam, melainkan sahabat yang kau temui setiap hari.",
+   "Kamu membuka lembarannya bukan sekadar untuk menyelesaikan halaman, tetapi untuk mendengar Rabbmu berbicara kepadamu.",
+   "Lisanmu menapaki ayat demi ayat, dan hatimu berusaha memahami apa yang dilewati.",
+   "Hari terasa hampa bila kau belum bersua dengan-Nya lewat firman-Nya.",
+   "Kamu menjaga hafalan seperti menjaga amanah; kau ulang yang telah dihafal agar tak terlepas, dan kau tambah sedikit demi sedikit dengan penuh kerinduan.",
+   "Orang melihatmu membaca; yang tak mereka lihat adalah bagaimana ayat-ayat itu perlahan membentuk caramu memandang dunia."],
+  amalan:["Tilawah harian dengan tartil","Menghafal dan mengulang hafalan (muraja'ah)","Mentadaburi makna ayat","Membaca surah-surah utama (Al-Kahfi di hari Jumat, Al-Mulk, dan lainnya)","Memperindah dan memperbaiki bacaan"],
+  nilaiT:"Kecintaan pada Kalam Allah",
+  nilaiD:"Nilai dirimu tumbuh dari kedekatan dengan Kitab Allah \u2014 membacanya, memahaminya, dan membiarkannya membimbing langkah.",
+  keutamaan:["Setiap huruf Al-Qur'an yang dibaca berbuah kebaikan yang berlipat.","Al-Qur'an akan datang sebagai pemberi syafaat bagi pembacanya.","Orang yang mahir membaca Al-Qur'an bersama para malaikat yang mulia.","Rumah yang dibacakan Al-Qur'an dipenuhi ketenangan dan rahmat.","Tadabur ayat menghidupkan hati dan meluruskan niat."]},
+ infaq:{
+  arab:"\u0637\u0631\u064a\u0642 \u0627\u0644\u0639\u0637\u0627\u0621", tr:"\u1E6Car\u012Bq al-\u02BFA\u1E6D\u0101\u02BE", jalan:"Jalan Memberi",
+  quote:"Obatilah orang-orang sakit kalian dengan sedekah.", qsrc:"Abdullah bin Mubarak ra\u1E25imahull\u0101h",
+  desc:[
+   "Tanganmu terbiasa terbuka.",
+   "Kamu memahami bahwa apa yang digenggam erat akan habis, dan apa yang diberikan justru tumbuh dan kembali dalam bentuk yang tak terduga.",
+   "Kamu memberi bukan dari kelebihan semata, melainkan dari kepedulian \u2014 sepotong rezeki untuk yang lapar, sedikit lapang untuk yang sempit, tenaga dan senyum untuk yang lelah.",
+   "Sedekahmu kerap kau sembunyikan, sebab kau tahu pemberian yang paling bersih adalah yang tak diketahui tangan kiri.",
+   "Bagimu, memberi adalah cara menghidupkan: menghidupkan harapan orang lain, dan menghidupkan hatimu sendiri dari cinta dunia.",
+   "Kekayaanmu yang sebenarnya bukan pada apa yang kau simpan, melainkan pada apa yang telah kau lepaskan di jalan-Nya."],
+  amalan:["Sedekah harian, sekecil apa pun","Infaq tersembunyi tanpa diketahui orang","Memberi makan dan membantu yang membutuhkan","Wakaf dan sedekah jariyah","Meringankan beban serta berbagi ilmu dan tenaga"],
+  nilaiT:"Kedermawanan",
+  nilaiD:"Nilai dirimu dibentuk oleh kemurahan hati, kerelaan melepaskan, dan kepedulian yang mengutamakan orang lain di atas diri sendiri.",
+  keutamaan:["Sedekah tidak mengurangi harta, justru membersihkan dan menumbuhkannya.","Pemberian yang ikhlas memadamkan kesalahan sebagaimana air memadamkan api.","Sedekah menjadi naungan bagi pemberinya di hari yang tiada naungan.","Tangan yang memberi lebih mulia daripada tangan yang menerima.","Memberi melembutkan hati dan melepaskan belenggu cinta dunia."]},
+ majelis:{
+  arab:"\u0637\u0631\u064a\u0642 \u0637\u0644\u0628 \u0627\u0644\u0639\u0644\u0645", tr:"\u1E6Car\u012Bq \u1E6Calab al-\u02BFIlm", jalan:"Jalan Menuntut Ilmu",
+  quote:"Ilmu itu bukan banyaknya riwayat, tetapi cahaya yang Allah letakkan di dalam hati.", qsrc:"Imam Malik ra\u1E25imahull\u0101h",
+  desc:[
+   "Kamu termasuk mereka yang tak pernah merasa cukup tahu.",
+   "Kau hadiri majelis bukan untuk menambah bahan bicara, melainkan untuk menambah cahaya di dada.",
+   "Kamu duduk merendah di hadapan ilmu, sebab kau paham bahwa yang paling banyak belajar justru yang paling sadar betapa sedikit yang ia kuasai.",
+   "Pertanyaanmu lahir dari kerinduan, bukan dari keinginan memenangkan perdebatan.",
+   "Kamu mencari ilmu yang mengubah \u2014 yang membuatmu lebih takut kepada Allah, lebih lembut kepada manusia, dan lebih jujur kepada diri sendiri.",
+   "Sebab bagimu, ilmu sejati bukan yang memenuhi catatan, tetapi yang menerangi langkah."],
+  amalan:["Menghadiri majelis ilmu dan kajian","Membaca dan menelaah kitab","Mencatat dan mengulang pelajaran","Bertanya kepada ahlinya dengan adab","Mengamalkan dan membagikan ilmu yang didapat"],
+  nilaiT:"Cinta Ilmu",
+  nilaiD:"Nilai dirimu tumbuh dari kerendahan hati seorang pencari, kesungguhan menelaah, dan tekad menjadikan ilmu sebagai cahaya yang mengubah amal.",
+  keutamaan:["Menempuh jalan menuntut ilmu memudahkan jalan menuju surga.","Para malaikat membentangkan sayapnya karena ridha kepada penuntut ilmu.","Ilmu yang diamalkan dan diajarkan menjadi amal yang terus mengalir.","Majelis ilmu adalah taman yang dinaungi rahmat dan ketenangan.","Ilmu yang benar menumbuhkan rasa takut dan cinta kepada Allah."]}
+};
+
+/* ---------- emblems (simbol benda mati, sesuai sunnah) ---------- */
+function emblemSym(key,col){
+  switch(key){
+    case 'puasa': return `<path d="M62 24a30 30 0 1 0 0 52 23 23 0 1 1 0-52z" fill="${col}"/>`;
+    case 'shalat': return `<path d="M34 80V54a16 16 0 0 1 32 0v26" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round"/><path d="M28 80h44" stroke="${col}" stroke-width="6" stroke-linecap="round"/>`;
+    case 'qiyamul': return `<rect x="40" y="34" width="20" height="34" rx="4" fill="none" stroke="${col}" stroke-width="5"/><path d="M44 26h12v8H44z" fill="${col}"/><path d="M40 68h20l4 8H36z" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><circle cx="50" cy="51" r="6" fill="${col}"/>`;
+    case 'dzikir': { let s=''; for(let i=0;i<9;i++){const a=-Math.PI/2+i*(Math.PI*2/9);s+=`<circle cx="${(50+27*Math.cos(a)).toFixed(1)}" cy="${(52+27*Math.sin(a)).toFixed(1)}" r="5" fill="${col}"/>`;} return s; }
+    case 'tilawah': return `<path d="M50 32c-7-5-17-6-24-3v40c7-3 17-2 24 3 7-5 17-6 24-3V29c-7-3-17-2-24 3z" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><path d="M50 32v40" stroke="${col}" stroke-width="4"/>`;
+    case 'infaq': return `<path d="M50 24c10 16 18 23 18 33a18 18 0 1 1-36 0c0-10 8-17 18-33z" fill="${col}"/>`;
+    case 'majelis': return `<path d="M32 34h30a6 6 0 0 1 6 6v36a7 7 0 0 0-6-4H32z" fill="none" stroke="${col}" stroke-width="5" stroke-linejoin="round"/><path d="M40 46h16M40 56h12" stroke="${col}" stroke-width="4" stroke-linecap="round"/>`;
+    default: { const pts=[]; for(let i=0;i<16;i++){const a=-Math.PI/2+i*Math.PI/8;const r=(i%2===0)?30:13;pts.push((50+r*Math.cos(a)).toFixed(1)+','+(50+r*Math.sin(a)).toFixed(1));} return `<polygon points="${pts.join(' ')}" fill="${col}"/>`; }
+  }
+}
+/* Emblem raster: isi satu baris per file saat siap (plug & play).
+   Key harus cocok dengan key kategori. File diletakkan di folder yang sama dgn index.html.
+   Jika sebuah key TIDAK ada di sini, otomatis pakai emblem SVG bawaan. */
+const EMBLEM_IMG = {
+  truth:'./emblem-truth.png',
+  puasa:'./emblem-puasa.png', shalat:'./emblem-shalat.png', qiyamul:'./emblem-qiyamul.png',
+  dzikir:'./emblem-dzikir.png', tilawah:'./emblem-tilawah.png', infaq:'./emblem-infaq.png', majelis:'./emblem-majelis.png'
+};
+function emblem(key,cls){
+  if(EMBLEM_IMG[key]) return `<img class="em ${cls||''}" src="${EMBLEM_IMG[key]}" alt="" loading="lazy" decoding="async">`;
+  const cat=key==='truth'?TRUTH:(CATMAP[key]||TRUTH); const col=cat.c;
+  return `<svg class="em ${cls||''}" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="${col}22" stroke="${col}55" stroke-width="2"/>${emblemSym(key,col)}</svg>`; }
+/* placeholder seragam untuk artefak terkunci \u2014 sengaja tak membocorkan emblem aslinya */
+function lockedEmblem(cls){
+  return `<svg class="em ${cls||''}" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M50 13 L79 23 L79 49 Q79 71 50 88 Q21 71 21 49 L21 23 Z" fill="#23332d" stroke="rgba(134,160,146,.28)" stroke-width="2"/>
+    <path d="M50 19 L73 27 L73 49 Q73 67 50 81 Q27 67 27 49 L27 27 Z" fill="none" stroke="rgba(134,160,146,.12)" stroke-width="1.4"/>
+    <path d="M43 51 V45 a7 7 0 0 1 14 0 V51" fill="none" stroke="#6f8a7e" stroke-width="3.6" stroke-linecap="round"/>
+    <rect x="38.5" y="51" width="23" height="18" rx="4" fill="#6f8a7e"/>
+    <circle cx="50" cy="58.5" r="2.5" fill="#23332d"/>
+    <rect x="48.7" y="59.5" width="2.6" height="5.5" rx="1.3" fill="#23332d"/>
+  </svg>`; }
+
+/* ---------- quest engine ---------- */
+const OTHERS=['shalat','qiyamul','dzikir','tilawah','infaq','majelis'];
+function questRatio(idx){ if(idx<=2)return 0; if(idx<=5)return .25; if(idx<=7)return .5; return .75; }
+function daySeed(d,n){ let s=0; const str=d+'#'+n; for(let i=0;i<str.length;i++) s=(s*31+str.charCodeAt(i))>>>0; return s; }
+function sr(s){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }
+function questText(cat){ if(cat==='any')return{cat:'any',t:'Tunaikan satu amal apa pun hari ini'}; if(cat==='puasa')return{cat:'puasa',t:'Tunaikan puasa sunnah'}; return{cat,t:'Tunaikan ibadah '+(CATMAP[cat]?CATMAP[cat].t:cat)}; }
+function genQuestBatch(idx,seed){ const p=questRatio(idx); const b=[];
+  for(let i=0;i<2;i++){ const r=sr(seed+i*7); let cat;
+    if(r<p) cat=OTHERS[Math.floor(sr(seed+i*7+99)*OTHERS.length)];
+    else cat=(sr(seed+i*7+50)<.5)?'any':'puasa';
+    b.push(Object.assign(questText(cat),{done:false})); }
+  return b; }
+
+/* ---------- tracker ---------- */
+function occursOn(c,g){ g=noon(g);
+  if(c.type==='once') return c.date===toISO(g);
+  if(c.type==='weekly') return g.getDay()===c.weekday;
+  if(c.type==='monthly'){ const last=new Date(g.getFullYear(),g.getMonth()+1,0).getDate(); return g.getDate()===Math.min(c.monthday,last); }
+  return false; }
+function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.getDay(); const ff=fastingForbidden(h); const out=[];
+  const add=(id,cat,t)=>out.push({key:id+'@'+toISO(g),cat,t,day:toISO(g)});
+  const addDual=(id,cat,also,t)=>out.push({key:id+'@'+toISO(g),cat,also,t,day:toISO(g)});
+  if(!ff){ if(day===1)add('sys-senin','puasa','Puasa Senin'); if(day===4)add('sys-kamis','puasa','Puasa Kamis');
+    if([13,14,15].includes(h.hd)&&!(h.hm===12&&h.hd===13))add('sys-ab','puasa','Puasa Ayyamul Bidh');
+    if(h.hm===12&&h.hd===9)add('sys-arafah','puasa','Puasa Arafah');
+    if(h.hm===1&&h.hd===9)add('sys-tasua','puasa','Puasa Tasua'); if(h.hm===1&&h.hd===10)add('sys-asyura','puasa','Puasa Asyura');
+    if(h.hm===10 && h.hd>=2 && out.every(o=>o.cat!=='puasa')) add('sys-syawal','puasa','Puasa Syawal'); }
+  if(day===5) add('sys-kahfi','tilawah','Baca Surah Al-Kahfi');
+  if(day===4 && h.hd<=7) addDual('sys-tasbih','shalat','qiyamul','Shalat Tasbih');   // malam Jumat pertama bulan Hijriah
+  if(sameDay(g,noon(new Date()))) add('sys-subuh','infaq','Sedekah Subuh');           // hanya hari ini, tanpa penanda kalender
+  for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g)}); }
+  return out; }
+function syawalCount(){ const hy=g2h(new Date()).hy; const s={};
+  for(const k in S.profile.track){ const r=S.profile.track[k]; if(r&&r.s==='done'&&r.c==='puasa'){ const hh=g2h(fromISO(r.d)); if(hh.hm===10&&hh.hy===hy) s[r.d]=1; } }
+  return Object.keys(s).length; }
+function setTrack(key,cat,dayISO,state,also){ const cur=trkState(key); const ak=also?(key+'|'+also):null;
+  if(cur===state){ delete S.profile.track[key]; if(ak) delete S.profile.track[ak]; }
+  else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO);
+    if(ak){ S.profile.track[ak]={s:state,c:also,d:dayISO}; if(state==='done') questProgress(also,dayISO); } }
+  if(S.profile.started) titleSync();
+  save(); }
+function questProgress(cat,dayISO){ if(!S.profile.started) return; if(dayISO!==toISO(new Date())) return;
+  profileSync(); const q=S.profile.q; let changed=false;
+  let target=q.batch.find(qq=>!qq.done&&qq.cat===cat) || q.batch.find(qq=>!qq.done&&qq.cat==='any');
+  if(target){ target.done=true; S.profile.score+=8; q.doneToday++; q.lastDone=toISO(new Date()); changed=true; }
+  if(changed && q.batch.every(x=>x.done)){ const maxB=q.penaltyUntil?1:3;
+    if(q.batchN<maxB){ q.batchN++; q.batch=genQuestBatch(rankIndex(S.profile.score),daySeed(toISO(new Date()),q.batchN)); }
+    else q.exhausted=true; } }
+
+/* ---------- daily + monthly sync ---------- */
+function profileSync(){ if(!S.profile.started) return; const today=toISO(new Date()); const q=S.profile.q;
+  if(q.day!==today){ const oldDay=q.day;
+    if(oldDay!==null){ if(q.exhausted) q.maxedStreak=(q.maxedStreak||0)+1; else q.maxedStreak=0;
+      if((q.maxedStreak||0)>=3 && !q.penaltyUntil) q.penaltyUntil=toISO(addDays(new Date(),7)); }
+    if(q.penaltyUntil && today>=q.penaltyUntil){ q.penaltyUntil=null; q.maxedStreak=0; }
+    let gap=oldDay?Math.round((fromISO(today)-fromISO(oldDay))/MS):0;
+    let idle=Math.max(0,gap-((q.doneToday>0)?1:0));
+    if(idle>0){ const dr=(rankIndex(S.profile.score)>=9?22:4); S.profile.score=Math.max(0,S.profile.score-dr*Math.min(idle,7)); }
+    q.day=today; q.doneToday=0; q.exhausted=false; q.batchN=1; q.batch=genQuestBatch(rankIndex(S.profile.score),daySeed(today,1)); }
+  titleSync(); save(); }
+function tallyCategories(days){ const cut=addDays(new Date(),-days); const t={};
+  for(const k in S.profile.track){ const r=S.profile.track[k]; if(r.s==='done'&&fromISO(r.d)>=cut) t[r.c]=(t[r.c]||0)+1; } return t; }
+function titleSync(){ if(!S.profile.started) return;
+  const added=evalUnlocks();
+  S.profile.title={key:wornTitle()};
+  if(added.length){ const cat=CATMAP[added[added.length-1]]||TRUTH;
+    toast('Artefak terbuka: '+cat.title+(added.length>1?(' (+'+(added.length-1)+')'):'')); } }
+function startJourney(){ S.profile.started=true; S.profile.startedAt=toISO(new Date());
+  S.profile.title={key:'truth'}; S.profile.q.day=null;
+  profileSync(); save(); renderProfil(); toast('Perjalananmu dimulai. Bismillah.'); }
+
+/* ---------- pie ---------- */
+function pieSVG(tally){ const entries=CATS.map(c=>({c,n:tally[c.k]||0})).filter(x=>x.n>0);
+  const total=entries.reduce((s,x)=>s+x.n,0); const R=58,cx=64,cy=64;
+  if(!total) return `<svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="${R}" fill="none" stroke="var(--line)" stroke-width="16"/></svg>`;
+  if(entries.length===1) return `<svg width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="${R}" fill="${entries[0].c.c}"/><circle cx="64" cy="64" r="26" fill="var(--bg)"/></svg>`;
+  let a=-Math.PI/2, paths='';
+  for(const e of entries){ const frac=e.n/total; const a2=a+frac*Math.PI*2; const large=frac>0.5?1:0;
+    const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    paths+=`<path d="M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${e.c.c}"/>`; a=a2; }
+  return `<svg width="128" height="128" viewBox="0 0 128 128">${paths}<circle cx="${cx}" cy="${cy}" r="26" fill="var(--bg)"/></svg>`; }
+
+/* ---------- render Profil ---------- */
+function trkControls(item){ const st=trkState(item.key);
+  const cat=CATMAP[item.cat]?CATMAP[item.cat].t:item.cat;
+  const alsoAttr=item.also?` data-trackalso="${item.also}"`:'';
+  const catLabel=item.also
+    ? `Kategori: ${esc(cat)} + ${esc(CATMAP[item.also]?CATMAP[item.also].t:item.also)} <span style="color:var(--gold-hi)">\u00b7 poin ganda</span>`
+    : `Kategori: ${esc(cat)}`;
+  return `<div class="chk-cat">${catLabel}</div><div class="trk">
+    <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done"${alsoAttr}>\u2713</button>
+    <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip"${alsoAttr}>\u2715</button></div>`; }
+function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
+  if(!S.profile.started){
+    v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
+      <div class="card"><div class="invite">${emblem('truth')}
+        <h2>Mulai perjalanan spiritualmu</h2>
+        <p>Lacak amal harianmu, temukan ibadah yang paling hidup dalam dirimu, dan bergeraklah maju sedikit demi sedikit menuju makna keikhlasan.</p>
+        <div class="muted-note">Profil dihitung diam-diam dari amal yang kamu centang. Tiap jalan ibadah matang dengan keistiqamahan, dan beberapa artefak menanti kamu meniti jalan lain lebih dulu. Semua privat, hanya di perangkatmu.</div>
+        <button class="btn primary block" data-questbegin="1">Quest Begin \u2014 mulai bulan ini</button>
+        <button class="btn ghost block" data-goto="home" style="margin-top:9px">Nanti saja</button>
+      </div></div></div>`; return; }
+  profileSync();
+  const p=S.profile;
+  const gi=gIndex(), rk=RANKS[gi], next=RANKS[Math.min(gi+1,RANKS.length-1)];
+  const gd=totalDays(), glo=GDAYS[gi], ghi=GDAYS[Math.min(gi+1,GDAYS.length-1)];
+  const pct=ghi>glo?Math.min(100,Math.round((gd-glo)/(ghi-glo)*100)):100;
+  const tc=p.title.key==='truth'?TRUTH:(CATMAP[p.title.key]||TRUTH);
+  const tally=tallyCategories(30); const q=p.q, maxB=q.penaltyUntil?1:3;
+  const questHTML=q.batch.map(qq=>`<div class="quest ${qq.done?'done':''}"><div class="qx">${qq.done?'\u2713':''}</div><div class="qt">${esc(qq.t)}</div>${qq.done?'<div class="qp">+8</div>':''}</div>`).join('');
+  const qnote=q.penaltyUntil
+    ? `<div class="qnote pen">Mode jeda aktif \u2014 hanya 1 batch/hari hingga ${esc(fmtGshort(fromISO(q.penaltyUntil)))}. Istirahatkan langkahmu; ibadah bukan perlombaan.</div>`
+    : `<div class="qnote">Batch ${q.batchN} dari ${maxB}. ${q.exhausted?'Quest hari ini sudah penuh \u2014 lanjut esok.':'Selesaikan untuk membuka batch berikutnya.'}</div>`;
+  const ent=CATS.map(c=>({c,n:tally[c.k]||0})); const total=ent.reduce((s,x)=>s+x.n,0);
+  const legend=ent.filter(x=>x.n>0).sort((a,b)=>b.n-a.n).map(x=>`<div class="lg"><span class="sw" style="background:${x.c.c}"></span>${esc(x.c.t)}<span class="lv">${x.n}</span></div>`).join('')||`<div class="muted-note">Belum ada amal tercatat. Centang ibadahmu di Catatan atau Kalender.</div>`;
+  let nudge=''; if(total>0){ const weak=ent.slice().sort((a,b)=>a.n-b.n)[0]; nudge=`<div class="nudge">Area yang bisa kamu kuatkan: <b>${esc(weak.c.t)}</b>. Coba jadwalkan satu di tab Catatan.</div>`; }
+  const arts=[{k:'truth'}].concat(CATS.map(c=>({k:c.k}))).map(a=>{ const un=p.artifacts.includes(a.k); const cat=a.k==='truth'?TRUTH:CATMAP[a.k];
+    return `<div class="art ${un?'unlocked':'locked'}" data-titledetail="${a.k}">${un?emblem(a.k):lockedEmblem()}<div class="an">${un?esc(cat.title):'???'}</div></div>`; }).join('');
+  v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
+    <div class="crest tappable" data-titledetail="${p.title.key}" style="--crest-glow:${tc.c}33;--rank-c:${rk.c}">${emblem(p.title.key)}
+      <div class="title-nm">${esc(tc.title)}</div>
+      <div class="title-sub">${p.title.key==='truth'?'Musafir dalam Perbaikan Diri':esc(tc.t)}</div>
+      <div class="rankpill"><span class="gem"></span>${esc(rk.t)} Rank</div>
+      <div class="crest-hint">Ketuk untuk membaca jalanmu</div></div>
+    <div class="card">
+      <div class="set-row" style="padding-top:0;border-bottom:none"><div class="l"><div class="t">Peringkat</div><div class="d">${gd} hari aktif \u00b7 ${gi<9?('menuju '+esc(next.t)):'puncak tertinggi'}</div></div></div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="bar-meta"><span>${esc(rk.t)}</span><span>${gi<9?esc(next.t)+' \u00b7 '+ghi:'Celestial'}</span></div></div>
+    <div class="section-title">Quest harian</div>
+    <div class="card">${questHTML}${qnote}</div>
+    <div class="section-title">Komposisi amal (30 hari)</div>
+    <div class="card"><div class="pie-wrap">${pieSVG(tally)}<div class="legend">${legend}</div></div>${nudge?('<div style="margin-top:14px">'+nudge+'</div>'):''}</div>
+    <div class="section-title">Koleksi artefak</div>
+    <div class="card"><div class="arts">${arts}</div>
+      <div class="muted-note" style="margin-top:12px">Tiap artefak terbuka ketika jalannya matang \u2014 dan jalan tertentu menanti kamu meniti jalan lain lebih dulu. Ketuk gembok untuk melihat syaratnya. Sekali terbuka, ia milikmu selamanya.</div></div></div>`;
+}
+
+/* ---------- dev mode (pengujian) ---------- */
+function seedDummy(){ const P=S.profile; const mix=['tilawah','tilawah','tilawah','dzikir','dzikir','puasa','shalat','infaq','majelis','qiyamul','tilawah','dzikir'];
+  for(let i=0;i<mix.length;i++){ P.track['seed-'+i]={s:'done',c:mix[i],d:toISO(addDays(new Date(),-(i+1)))}; } }
+function devAction(cmd){ const P=S.profile; const today=toISO(new Date()); const th=g2h(new Date());
+  const i=cmd.indexOf(':'); const g=i<0?cmd:cmd.slice(0,i); const a=i<0?'':cmd.slice(i+1);
+  if(g==='devoff'){ S._dev=false; save(); toast('Mode pengembang ditutup'); render(); return; }
+  if(g==='start'){ P.started=true; P.startedAt=today; P.title={key:'truth',hy:th.hy,hm:th.hm}; P.q.day=null; profileSync(); save(); toast('Profiling diaktifkan'); render(); return; }
+  if(g==='rank'){ P.score=(RANKS.find(x=>x.k===a)||RANKS[0]).min; }
+  else if(g==='score'){ P.score=Math.max(0,P.score+(parseInt(a,10)||0)); }
+  else if(g==='setscore'){ const el=document.getElementById('devScore'); P.score=Math.max(0,parseInt(el&&el.value,10)||0); }
+  else if(g==='title'){ P.title={key:a,hy:th.hy,hm:th.hm}; if(a!=='truth'&&!P.artifacts.includes(a)) P.artifacts.push(a); }
+  else if(g==='sync'){ if(a==='day'){ P.q.day=toISO(addDays(new Date(),-1)); P.q.doneToday=0; profileSync(); }
+    else if(a==='title'){ P.title={key:P.title.key,hy:null,hm:null}; titleSync(); } }
+  else if(g==='quest'){ const q=P.q;
+    if(a==='fill'){ q.batch.forEach(x=>{ if(!x.done){ x.done=true; P.score+=8; q.doneToday++; q.lastDone=today; } });
+      const maxB=q.penaltyUntil?1:3; if(q.batchN<maxB){ q.batchN++; q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,q.batchN)); } else q.exhausted=true; }
+    else if(a==='reset'){ q.batchN=1; q.exhausted=false; q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,1)); } }
+  else if(g==='penalty'){ if(a==='on'){ P.q.maxedStreak=3; P.q.penaltyUntil=toISO(addDays(new Date(),7)); P.q.batchN=1; P.q.exhausted=false; P.q.batch=genQuestBatch(rankIndex(P.score),daySeed(today,1)); } else { P.q.penaltyUntil=null; P.q.maxedStreak=0; } }
+  else if(g==='unlockall'){ P.artifacts=['truth'].concat(CATS.map(c=>c.k)); }
+  else if(g==='seed'){ seedDummy(); }
+  else if(g==='grant'){ const c=a||'dzikir'; for(let i=0;i<50;i++){ P.track['grant-'+c+'-'+i]={s:'done',c,d:toISO(addDays(new Date(),-(i+1)))}; } titleSync(); }
+  else if(g==='cleardays'){ for(const k in P.track){ if(k.indexOf('grant-')===0||k.indexOf('seed-')===0) delete P.track[k]; } titleSync(); }
+  else if(g==='reset'){ if(a==='soft'){ P.track={}; P.score=0; P.title={key:'truth',hy:th.hy,hm:th.hm}; P.artifacts=['truth'];
+      P.q={day:null,batch:[],batchN:1,doneToday:0,exhausted:false,maxedStreak:0,penaltyUntil:null,lastDone:null}; profileSync(); }
+    else { P.started=false; } }
+  save(); toast('Dev: '+cmd); render();
+}
+function devPanel(){ const P=S.profile;
+  if(!P.started) return `<div class="section-title" style="color:var(--danger)">Mode pengembang</div>
+    <div class="card"><div class="muted-note" style="margin-bottom:12px">Profiling belum aktif. Paksa mulai untuk menguji, atau gunakan Quest Begin di tab Profil.</div>
+    <button class="btn block" data-dev="start">Paksa mulai (Quest Begin)</button>
+    <button class="btn ghost block" data-dev="devoff" style="margin-top:9px">Tutup mode pengembang</button></div>`;
+  const rk=rankOf(P.score), ri=rankIndex(P.score), tc=P.title.key==='truth'?TRUTH:(CATMAP[P.title.key]||TRUTH);
+  const ro=(k,v)=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:var(--muted)">${k}</span><span style="color:var(--cream-2)">${esc(String(v))}</span></div>`;
+  const rankBtns=RANKS.map(r=>`<button class="devbtn" data-dev="rank:${r.k}">${r.t}</button>`).join('');
+  const titleBtns=[{k:'truth',t:'Truth'}].concat(CATS.map(c=>({k:c.k,t:c.title.split(' ')[0]}))).map(x=>`<button class="devbtn" data-dev="title:${x.k}">${esc(x.t)}</button>`).join('');
+  return `<div class="section-title" style="color:var(--danger)">Mode pengembang</div>
+    <div class="card">
+      <div class="devlbl">Progres baru \u2014 crest &amp; gerbang (hari-aktif)</div>
+      ${ro('Rank crest',RANKS[gIndex()].t+' \u00b7 '+totalDays()+' hari')}${ro('Streak',currentStreak()+' hari')}${ro('Title dikenakan',tc.title)}${ro('Artefak',P.artifacts.length+'/8')}
+      ${ro('Hari/jalan',CATS.map(c=>c.k.slice(0,2)+':'+pathDays(c.k)+RANKS[pathIdx(c.k)].t[0]).join('  '))}
+      <div class="dev-grid">${CATS.map(c=>`<button class="devbtn" data-dev="grant:${c.k}">+${esc(c.k)}</button>`).join('')}<button class="devbtn" data-dev="cleardays">hapus hari</button></div>
+      <div class="dev-grid"><button class="devbtn" data-dev="unlockall">Buka semua artefak</button><button class="devbtn" data-dev="sync:title">Re-eval gerbang</button></div>
+      <div class="muted-note" style="margin:8px 0 2px;font-size:11px;line-height:1.5">Rank crest &amp; gerbang artefak dikendalikan <b>hari-aktif</b> di atas. Skor/rank di blok bawah hanya <b>momentum quest harian</b> \u2014 tak mengubah crest.</div>
+      <div class="devlbl">Buka artefak manual (uji koleksi)</div><div class="dev-grid">${titleBtns}</div>
+      <div class="devlbl" style="margin-top:16px;opacity:.75">\u2500\u2500 Momentum quest (internal) \u2500\u2500</div>
+      ${ro('Skor quest',P.score)}${ro('Rank quest',rk.t+' (idx '+ri+')')}${ro('Quest custom',(questRatio(ri)*100)+'%')}${ro('Batch',P.q.batchN+'/'+(P.q.penaltyUntil?1:3)+(P.q.exhausted?' penuh':''))}${ro('Penalti',P.q.penaltyUntil?('s/d '+P.q.penaltyUntil):'tidak')}
+      <div class="devlbl">Skor quest \u2014 lompat (tak ubah crest)</div><div class="dev-grid">${rankBtns}</div>
+      <div class="devlbl">Skor quest \u2014 manual</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><input type="number" id="devScore" value="${P.score}" style="flex:1"/><button class="devbtn" data-dev="setscore" style="flex:none;padding:9px 16px">Set</button></div>
+      <div class="dev-grid"><button class="devbtn" data-dev="score:50">+50</button><button class="devbtn" data-dev="score:200">+200</button><button class="devbtn" data-dev="score:-50">\u221250</button><button class="devbtn" data-dev="score:-200">\u2212200</button></div>
+      <div class="devlbl">Sinkronisasi & quest</div>
+      <div class="dev-grid"><button class="devbtn" data-dev="sync:day">Force hari+1</button><button class="devbtn" data-dev="quest:fill">Selesaikan batch</button><button class="devbtn" data-dev="quest:reset">Reset quest</button><button class="devbtn" data-dev="penalty:on">Picu penalti</button><button class="devbtn" data-dev="penalty:off">Hapus penalti</button></div>
+      <div class="devlbl">Data & reset</div>
+      <div class="dev-grid"><button class="devbtn" data-dev="seed">Isi data contoh</button><button class="devbtn" data-dev="reset:soft">Reset profil</button><button class="devbtn" data-dev="reset:off">Matikan profiling</button></div>
+      <button class="btn ghost block" data-dev="devoff" style="margin-top:12px">Tutup mode pengembang</button>
+    </div>`;
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+const modal=$('#modal'), sheet=$('#sheet');
+function openSheet(html){ sheet.innerHTML='<div class="grab"></div>'+html; modal.classList.add('show'); }
+function closeSheet(){ modal.classList.remove('show'); }
+modal.addEventListener('click',e=>{ if(e.target.hasAttribute('data-close')) closeSheet(); });
+
+function customForm(existing){
+  const c=existing||{type:'once',title:'',note:'',date:toISO(new Date()),weekday:1,monthday:noon(new Date()).getDate(),category:'dzikir'};
+  openSheet(`<h3>${existing?'Ubah':'Tambah'} catatan</h3>
+    <div class="field"><label>Judul</label><input type="text" id="f-title" value="${esc(c.title)}" placeholder="mis. Pengajian rutin / Ceramah tamu"/></div>
+    <div class="field"><label>Jenis</label>
+      <div class="seg" id="f-type">
+        <button data-t="once" class="${c.type==='once'?'on':''}">Sekali</button>
+        <button data-t="weekly" class="${c.type==='weekly'?'on':''}">Pekanan</button>
+        <button data-t="monthly" class="${c.type==='monthly'?'on':''}">Bulanan</button>
+      </div></div>
+    <div class="field"><label>Kategori ibadah</label>
+      <select id="f-cat">${CATS.map(x=>`<option value="${x.k}" ${(c.category||'dzikir')===x.k?'selected':''}>${esc(x.t)}</option>`).join('')}</select></div>
+    <div class="field" id="f-once" style="display:${c.type==='once'?'block':'none'}"><label>Tanggal</label><input type="date" id="f-date" value="${c.date||toISO(new Date())}"/></div>
+    <div class="field" id="f-weekly" style="display:${c.type==='weekly'?'block':'none'}"><label>Hari</label>
+      <select id="f-weekday">${DG.map((d,i)=>`<option value="${i}" ${c.weekday===i?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div class="field" id="f-monthly" style="display:${c.type==='monthly'?'block':'none'}"><label>Tanggal setiap bulan</label><input type="number" id="f-monthday" min="1" max="31" value="${c.monthday||1}"/></div>
+    <div class="field"><label>Catatan (opsional)</label><textarea id="f-note" placeholder="Detail singkat...">${esc(c.note||'')}</textarea></div>
+    <button class="btn primary block" id="f-save">${existing?'Simpan perubahan':'Tambah catatan'}</button>
+    ${existing?`<button class="btn ghost block" id="f-del" style="margin-top:9px;color:var(--danger)">Hapus catatan</button>`:''}`);
+  let type=c.type;
+  sheet.querySelectorAll('#f-type button').forEach(b=>b.onclick=()=>{
+    type=b.dataset.t; sheet.querySelectorAll('#f-type button').forEach(x=>x.classList.toggle('on',x===b));
+    $('#f-once').style.display=type==='once'?'block':'none';
+    $('#f-weekly').style.display=type==='weekly'?'block':'none';
+    $('#f-monthly').style.display=type==='monthly'?'block':'none';
+  });
+  $('#f-save').onclick=()=>{
+    const title=$('#f-title').value.trim(); if(!title){ toast('Judul belum diisi'); return; }
+    const obj={ id: existing?existing.id:('c'+Date.now()), type, title, note:$('#f-note').value.trim(), category:$('#f-cat').value };
+    if(type==='once') obj.date=$('#f-date').value;
+    if(type==='weekly') obj.weekday=+$('#f-weekday').value;
+    if(type==='monthly') obj.monthday=Math.min(31,Math.max(1,+$('#f-monthday').value||1));
+    if(existing){ const i=S.custom.findIndex(x=>x.id===existing.id); S.custom[i]=obj; } else S.custom.push(obj);
+    save(); closeSheet(); toast('Tersimpan'); render();
+  };
+  if(existing){ $('#f-del').onclick=()=>{ S.custom=S.custom.filter(x=>x.id!==existing.id); save(); closeSheet(); toast('Catatan dihapus'); render(); }; }
+}
+
+function lockForm(key){
+  const [hy,hm]=key.split('-').map(Number);
+  const nm=(LOCK_MONTHS.find(l=>l.hm===hm)||{nm:MH[hm-1]}).nm;
+  const est=addDays(h2gRaw(hy,hm,1), -(S.settings.dayOffset||0));
+  const cur=S.locks[key]||toISO(est);
+  openSheet(`<h3>Kunci ${esc(nm)}</h3>
+    <div class="muted-note" style="margin-bottom:14px">Pilih tanggal Masehi untuk <b>hari pertama ${esc(MH[hm-1])} ${hy} H</b> sesuai penetapan resmi yang kamu ikuti. Perkiraan algoritma: <b>${esc(fmtGshort(est))}</b>.</div>
+    <div class="field"><label>Tanggal 1 ${esc(MH[hm-1])}</label><input type="date" id="lk-date" value="${cur}"/></div>
+    <button class="btn primary block" id="lk-save">Kunci tanggal</button>`);
+  $('#lk-save').onclick=()=>{ S.locks[key]=$('#lk-date').value; delete S.dismissed['c'+key]; save(); closeSheet(); toast('Tanggal dikunci'); render(); };
+}
+
+function aboutSheet(){
+  openSheet(`<h3>Tentang HILAL</h3>
+    <div class="muted-note" style="line-height:1.65">
+      <p>HILAL adalah almanak ibadah yang kamu buka berkala untuk melihat momentum ibadah yang sedang berlangsung dan akan datang \u2014 puasa sunnah, Ayyamul Bidh, hari besar, dan suasana spiritual bulan Hijriah.</p>
+      <p><b style="color:var(--cream)">Sumber tanggal.</b> Tanggal Hijriah dihitung dengan kalender Umm al-Qura langsung di perangkatmu, sehingga jalan penuh tanpa internet. Untuk event rutin (Senin\u2013Kamis, Ayyamul Bidh, awal bulan) perhitungan ini akurat.</p>
+      <p><b style="color:var(--cream)">Mengapa ada "perkiraan".</b> Awal Ramadhan, Idul Fitri, dan Idul Adha ditetapkan otoritas (di Indonesia: sidang isbat) dan bisa berbeda \u00b11 hari dari perhitungan. Karena itu kamu yang memegang kendali: gunakan <b>Geser hari</b> untuk menyamakan tanggal harian, dan <b>Kunci tanggal penetapan</b> begitu tanggal resmi diumumkan. Tanpa server, tanpa bergantung satu negara \u2014 tetap akurat di mana pun kamu berada.</p>
+      <p style="color:var(--muted-2)">Data tersimpan hanya di perangkat ini.</p>
+    </div>
+    <button class="btn block" data-close style="margin-top:6px">Tutup</button>`);
+}
+
+/* ---------- detail title / artefak ---------- */
+/* ---------- hint syarat untuk artefak terkunci ---------- */
+function reqRow(cat, needIdx){
+  const idx=pathIdx(cat), days=pathDays(cat), need=pathTh(cat)[needIdx], met=idx>=needIdx;
+  return `<li class="${met?'met':''}"><span class="rq">${esc(catName(cat))} \u00b7 ${RANKS[needIdx].t}</span><span class="rp">${met?'\u2713':RANKS[idx].t+' \u00b7 '+days+'/'+need+' hari'}</span></li>`;
+}
+function lockedReqHTML(key){
+  const g=GATE[key]; if(!g) return '';
+  let rows='', extra='';
+  if(g.tier==='root'){
+    rows=reqRow(key, GOLD);
+    extra=`<div class="reqalt">atau capai <b>${RANKS[SILVER].t}</b> pada jalan ini lalu istiqamah <b>21 hari beruntun</b> (streak kini: ${currentStreak()} hari).</div>`;
+  } else if(g.tier==='bridge'){
+    rows=reqRow(key, g.self);
+    rows+=`<li class="reqlbl">dan salah satu di bawah ini, \u00b7 ${RANKS[GOLD].t}</li>`;
+    rows+=g.dep.map(cl=>{
+      if(cl.length===1) return reqRow(cl[0], GOLD);
+      const met=cl.every(c=>pathIdx(c)>=GOLD);
+      const nm=cl.map(catName).join(' + ');
+      const pr=cl.map(c=>pathDays(c)+'/'+pathTh(c)[GOLD]).join(' & ');
+      return `<li class="${met?'met':''}"><span class="rq">${esc(nm)} \u00b7 ${RANKS[GOLD].t}</span><span class="rp">${met?'\u2713':esc(pr)+' hari'}</span></li>`;
+    }).join('');
+  } else if(g.tier==='apex'){
+    const A=S.profile.artifacts||[];
+    const r=['puasa','dzikir','tilawah'].filter(x=>A.includes(x)).length;
+    const b=['shalat','infaq','majelis'].filter(x=>A.includes(x)).length;
+    rows=reqRow(key, g.self);
+    rows+=`<li class="${r>=g.needRoots?'met':''}"><span class="rq">Minimal ${g.needRoots} Jalan Dasar</span><span class="rp">${r>=g.needRoots?'\u2713':r+'/'+g.needRoots}</span></li>`;
+    rows+=`<li class="${b>=g.needBridges?'met':''}"><span class="rq">Minimal ${g.needBridges} Jalan Penghubung</span><span class="rp">${b>=g.needBridges?'\u2713':b+'/'+g.needBridges}</span></li>`;
+  }
+  return `<div class="tsec-h">Syarat membuka</div><ul class="treq">${rows}</ul>${extra}`;
+}
+function openTitleSheet(key){
+  const cat = key==='truth' ? TRUTH : (CATMAP[key]||TRUTH);
+  const tc = TITLE_CONTENT[key]; if(!tc) return;
+  const col = cat.c;
+  const unlocked = key==='truth' || (S.profile.artifacts||[]).includes(key);
+  const isCurrent = S.profile.started && S.profile.title && S.profile.title.key===key;
+  if(!unlocked){
+    openSheet(`<div class="tdetail" style="--mark:var(--muted)">
+      ${lockedEmblem()}
+      <div class="nm">???</div>
+      <div class="jalan" style="margin-top:8px">Artefak Terkunci</div>
+      ${lockedReqHTML(key)}
+      <div class="trenung">\u201C${esc(RENUNGAN[key]||'')}\u201D</div>
+      <button class="btn block" data-close style="margin-top:18px">Tutup</button></div>`);
+    return;
+  }
+  let h=`<div class="tdetail" style="--mark:${col}">
+    ${emblem(key)}
+    <div class="nm">${esc(cat.title)}</div>
+    <div class="arab" lang="ar" dir="rtl">${esc(tc.arab)}</div>
+    <div class="tr">${esc(tc.tr)}</div>
+    <div class="jalan">${esc(tc.jalan)}</div>`;
+  if(isCurrent) h+=`<div class="badge"><span class="tag">Title bulan ini</span></div>`;
+  h+=`<div class="tquote"><div class="q">${esc(tc.quote)}</div><div class="src">\u2014 ${esc(tc.qsrc)}</div></div>`;
+  h+=`<div class="tdesc">${tc.desc.map(p=>`<p>${esc(p)}</p>`).join('')}</div>`;
+  h+=`<div class="tsec-h">Amalan Khas</div><ul class="tlist">${tc.amalan.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`;
+  h+=`<div class="tsec-h">Nilai Utama</div><div class="tnilai"><div class="vt">${esc(tc.nilaiT)}</div><div class="vd">${esc(tc.nilaiD)}</div></div>`;
+  h+=`<div class="tsec-h">Keutamaan Ibadah</div><ul class="tlist" style="--mark:var(--gold)">${tc.keutamaan.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>`;
+  h+=`<button class="btn block" data-close style="margin-top:18px">Tutup</button></div>`;
+  openSheet(h);
+}
+
+/* ============================================================
+   TOAST + ROUTING
+   ============================================================ */
+let toastT;
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+
+let tab='home';
+function go(t){ tab=t; document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $('#v-'+t).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function render(){ if(tab==='home')renderHome(); else if(tab==='cal')renderCal(); else if(tab==='notes')renderNotes(); else if(tab==='profil')renderProfil(); else renderSet(); }
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
+$('#fab').onclick=()=>customForm(null);
+
+/* ---------- delegated clicks ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],[data-questbegin],[data-goto],[data-track],[data-titledetail],[data-dev],#installBtn,#persistBtn,#aboutBtn');
+  if(!t) return;
+  if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderFeedArea(); return; }
+  if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
+  if(t.dataset.edit){ const c=S.custom.find(x=>x.id===t.dataset.edit); if(c) customForm(c); return; }
+  if(t.dataset.season!=null){ const s=seasons()[+t.dataset.season]; if(s){ openSheet(`<h3>${esc(s.t)}</h3><div class="muted-note" style="line-height:1.6">${esc(s.ins)}</div><button class="btn block" data-close style="margin-top:16px">Tutup</button>`);} return; }
+  if(t.dataset.calmode){ if(calMode!==t.dataset.calmode){ calMode=t.dataset.calmode; renderCal(); } return; }
+  if(t.dataset.caltoday){ initCalRefs(); renderCal(); return; }
+  if(t.dataset.cal){ const dir=+t.dataset.cal;
+    if(calMode==='hijri'){ calH.hm+=dir; if(calH.hm>12){calH.hm=1;calH.hy++;} if(calH.hm<1){calH.hm=12;calH.hy--;} }
+    else { calG.gm+=dir; if(calG.gm>11){calG.gm=0;calG.gy++;} if(calG.gm<0){calG.gm=11;calG.gy--;} }
+    renderCal(); return; }
+  if(t.dataset.date){ document.querySelectorAll('.cell').forEach(c=>c.classList.remove('sel')); t.classList.add('sel'); showCalDay(fromISO(t.dataset.date)); return; }
+  if(t.dataset.off){ S.settings.dayOffset=Math.max(-3,Math.min(3,(S.settings.dayOffset||0)+ +t.dataset.off)); save(); renderSet(); return; }
+  if(t.dataset.lockset){ lockForm(t.dataset.lockset); return; }
+  if(t.dataset.lockclear){ delete S.locks[t.dataset.lockclear]; save(); toast('Kunci dihapus'); render(); return; }
+  if(t.dataset.dismiss){ S.dismissed['c'+t.dataset.dismiss]=true; save(); renderHome(); return; }
+  if(t.id==='installBtn'){ doInstall(); return; }
+  if(t.id==='persistBtn'){ doPersist(); return; }
+  if(t.id==='aboutBtn'){ aboutSheet(); return; }
+  if(t.dataset.questbegin){ startJourney(); return; }
+  if(t.dataset.goto){ go(t.dataset.goto); return; }
+  if(t.dataset.titledetail){ openTitleSheet(t.dataset.titledetail); return; }
+  if(t.dataset.track){ setTrack(t.dataset.track,t.dataset.trackcat,t.dataset.trackday,t.dataset.trackstate,t.dataset.trackalso||null);
+    if(tab==='cal') showCalDay(fromISO(t.dataset.trackday)); else render(); return; }
+  if(t.dataset.dev){ devAction(t.dataset.dev); return; }
+});
+
+/* ---------- install (PWA) ---------- */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredPrompt=e; refreshInstallUI(); });
+function refreshInstallUI(){ const b=$('#installBtn'), d=$('#installDesc'); if(!b)return;
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;
+  if(standalone){ b.textContent='Terpasang'; b.disabled=true; if(d)d.textContent='HILAL sudah berjalan sebagai aplikasi.'; }
+  else if(deferredPrompt){ b.disabled=false; b.textContent='Pasang'; }
+  else { b.disabled=true; if(d)d.innerHTML='Buka menu browser \u2192 \u201cTambahkan ke Layar Utama\u201d.'; }
+}
+async function doInstall(){ if(!deferredPrompt)return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; refreshInstallUI(); }
+
+/* ---------- persistent storage ---------- */
+async function refreshPersistUI(){ const b=$('#persistBtn'), d=$('#persistDesc'); if(!b||!navigator.storage||!navigator.storage.persisted)return;
+  const p=await navigator.storage.persisted(); if(p){ b.textContent='Aktif'; b.disabled=true; if(d)d.textContent='Data terlindungi dari penghapusan otomatis.'; } }
+async function doPersist(){ if(!navigator.storage||!navigator.storage.persist){ toast('Tidak didukung browser ini'); return; }
+  const ok=await navigator.storage.persist(); toast(ok?'Penyimpanan permanen aktif':'Permintaan ditolak browser'); refreshPersistUI(); }
+
+/* ---------- service worker ---------- */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+
+/* ---------- boot ---------- */
+(function(){ const el=$('#todayMini'); if(!el) return; let n=0,t0=0;
+  el.addEventListener('click',()=>{ const now=Date.now(); if(now-t0>1500)n=0; t0=now; n++;
+    if(n>=7){ n=0; S._dev=!S._dev; save(); toast(S._dev?'Mode pengembang aktif':'Mode pengembang nonaktif'); if(tab==='set')renderSet(); } }); })();
+if(S.profile.started) profileSync();
+render();
+</script>
+</body>
+</html>

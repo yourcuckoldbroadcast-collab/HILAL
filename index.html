@@ -243,6 +243,14 @@ textarea{ resize:vertical; min-height:64px; }
 .lockcard .st.locked{ color:var(--gold-hi); } .lockcard .st.est{ color:var(--danger); }
 .lockcard .actions{ display:flex; gap:8px; margin-top:11px; }
 .muted-note{ font-size:12px; color:var(--muted); line-height:1.55; }
+/* backup & restore */
+.bk-summary{ border:1px solid var(--line-soft); border-radius:13px; padding:4px 14px; margin:8px 0 16px; background:rgba(0,0,0,.16); }
+.bk-row{ display:flex; justify-content:space-between; gap:14px; padding:9px 0; font-size:13px; border-bottom:1px solid var(--line-soft); }
+.bk-row:last-child{ border-bottom:none; }
+.bk-row .k{ color:var(--muted); } .bk-row .v{ color:var(--cream); text-align:right; font-family:var(--serif); }
+.bk-row .v.gold{ color:var(--gold-hi); }
+.bk-actions>button+button{ margin-top:9px; }
+textarea.mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; line-height:1.5; }
 
 /* ---------- empty ---------- */
 .empty{ text-align:center; padding:42px 20px; color:var(--muted); }
@@ -969,6 +977,16 @@ function renderSet(){
     }
   }
   h+='</div>';
+  // backup & restore
+  h+=`<div class="section-title">Cadangan &amp; pemulihan</div><div class="card">
+    <div class="muted-note" style="margin-bottom:14px">Simpan seluruh datamu ke satu berkas: catatan &amp; reminder, juga seluruh progres profil \u2014 rank crest, title yang dikenakan, momentum quest, dan artefak yang telah terbuka. Pindahkan ke perangkat baru atau jadikan cadangan. Tanpa server; berkasnya sepenuhnya di tanganmu.</div>
+    <div class="set-row"><div class="l"><div class="t">Ekspor data</div><div class="d">Unduh atau bagikan berkas .json berisi semua progres &amp; reminder.</div></div>
+      <button class="btn primary" data-backup="export">Ekspor</button></div>
+    <div class="set-row"><div class="l"><div class="t">Impor data</div><div class="d">Pulihkan dari berkas cadangan \u2014 gabungkan atau ganti total.</div></div>
+      <button class="btn" data-backup="import">Impor</button></div>
+    <div class="set-row"><div class="l"><div class="t">Tempel teks cadangan</div><div class="d">Tak bisa memilih berkas? Tempel isi JSON-nya di sini.</div></div>
+      <button class="btn ghost" data-backup="paste">Tempel</button></div>
+  </div>`;
   // app
   h+=`<div class="section-title">Aplikasi</div><div class="card">
     <div class="set-row"><div class="l"><div class="t">Pasang ke layar utama</div><div class="d" id="installDesc">Jadikan HILAL seperti aplikasi biasa.</div></div>
@@ -1556,6 +1574,213 @@ function openTitleSheet(key){
 }
 
 /* ============================================================
+   CADANGAN & PEMULIHAN (Export / Import JSON)
+   Satu berkas membawa: reminder + seluruh progres profil
+   (rank crest, title, momentum quest, artefak terbuka).
+   Impor "Gabungkan" tak pernah menghapus progres; impor
+   "Ganti total" memuat ulang seluruh state dari berkas.
+   ============================================================ */
+const BK_SCHEMA=1;
+let pendingImport=null;        // {data, summary, when, whenH}
+let importMode='merge';
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function backupName(){ const h=g2h(new Date()); return `HILAL-cadangan-${h.hy}-${pad2(h.hm)}-${pad2(h.hd)}.json`; }
+
+// Hitung ringkasan dari sebuah objek data (tanpa bergantung pada state global S),
+// agar bisa dipakai untuk pratinjau berkas yang akan diimpor.
+function distinctDaysByCat(track){ const m={}; for(const k in track){ const r=track[k]; if(r&&r.s==='done'&&r.c){ (m[r.c]=m[r.c]||{})[r.d]=1; } } return m; }
+function summarizeData(d){
+  const prof=(d&&d.profile)||{}; const track=prof.track||{};
+  const byCat=distinctDaysByCat(track); const pdays={}; let total=0;
+  for(const c of CATS){ const n=byCat[c.k]?Object.keys(byCat[c.k]).length:0; pdays[c.k]=n; total+=n; }
+  let gi=0; for(let j=0;j<GDAYS.length;j++) if(total>=GDAYS[j]) gi=j;
+  const arts=Array.isArray(prof.artifacts)?prof.artifacts:['truth'];
+  const tiers=[['qiyamul'],['shalat','infaq','majelis'],['puasa','dzikir','tilawah']]; let worn='truth';
+  for(const tier of tiers){ const own=tier.filter(k=>arts.includes(k)); if(own.length){ own.sort((a,b)=>(pdays[b]||0)-(pdays[a]||0)); worn=own[0]; break; } }
+  const tc=worn==='truth'?TRUTH:(CATMAP[worn]||TRUTH);
+  return { started:!!prof.started, score:prof.score||0,
+    rank:RANKS[gi].t, totalDays:total, title:tc.title,
+    artifactsAll:Array.isArray(arts)?arts.length:1,
+    reminders:Array.isArray(d&&d.custom)?d.custom.length:0,
+    locks:(d&&d.locks)?Object.keys(d.locks).length:0 };
+}
+function summaryRows(s,extra){
+  const r=(k,v,g)=>`<div class="bk-row"><span class="k">${k}</span><span class="v${g?' gold':''}">${esc(String(v))}</span></div>`;
+  let h='<div class="bk-summary">';
+  h+=r('Perjalanan', s.started?'Sudah dimulai':'Belum dimulai');
+  h+=r('Rank crest', s.rank, true);
+  h+=r('Title', s.title, true);
+  h+=r('Artefak terbuka', s.artifactsAll+' / 8');
+  h+=r('Total hari ibadah', s.totalDays+' hari');
+  h+=r('Skor quest', s.score);
+  h+=r('Reminder tersimpan', s.reminders);
+  if(s.locks) h+=r('Tanggal terkunci', s.locks);
+  if(extra) h+=extra;
+  h+='</div>';
+  return h;
+}
+
+// Susun objek cadangan lengkap (envelope + data otoritatif).
+function buildBackup(){
+  const data={ settings:S.settings, locks:S.locks, custom:S.custom, dismissed:S.dismissed, profile:S.profile };
+  const now=new Date(), h=g2h(now);
+  return { app:'HILAL', kind:'hilal-backup', schema:BK_SCHEMA,
+    exportedAt:now.toISOString(), exportedAtG:fmtGshort(now), exportedAtH:`${h.hd} ${MH[h.hm-1]} ${h.hy} H`,
+    summary:summarizeData(data), data };
+}
+function backupString(){ return JSON.stringify(buildBackup(),null,2); }
+
+function exportSheet(){
+  const s=summarizeData({ settings:S.settings, locks:S.locks, custom:S.custom, profile:S.profile });
+  openSheet(`<h3>Ekspor data HILAL</h3>
+    <div class="muted-note" style="margin-bottom:8px">Seluruh isi di bawah dikemas dalam satu berkas JSON \u2014 bisa kamu simpan sebagai cadangan atau pindahkan ke perangkat lain. Tanpa server; berkasnya tetap milikmu.</div>
+    ${summaryRows(s)}
+    <div class="bk-actions">
+      <button class="btn primary block" data-backup="download">Simpan berkas .json</button>
+      ${('share' in navigator)?'<button class="btn block" data-backup="share">Bagikan\u2026</button>':''}
+      <button class="btn ghost block" data-backup="copy">Salin sebagai teks</button>
+    </div>`);
+}
+function downloadBackup(){
+  try{
+    const blob=new Blob([backupString()],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=backupName();
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ try{document.body.removeChild(a);}catch(e){} URL.revokeObjectURL(url); },1500);
+    toast('Berkas cadangan dibuat');
+  }catch(e){ exportTextSheet(backupString()); }
+}
+async function shareBackup(){
+  const str=backupString();
+  try{
+    if(navigator.canShare){ const file=new File([str],backupName(),{type:'application/json'});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:'Cadangan HILAL',text:'Cadangan data HILAL'}); return; } }
+    if(navigator.share){ await navigator.share({title:'Cadangan HILAL',text:str}); return; }
+  }catch(e){ if(e&&e.name==='AbortError') return; }
+  downloadBackup();
+}
+async function copyBackup(){
+  const str=backupString();
+  try{ await navigator.clipboard.writeText(str); toast('Disalin ke papan klip'); }
+  catch(e){ exportTextSheet(str); }
+}
+function exportTextSheet(str){
+  openSheet(`<h3>Salin teks cadangan</h3>
+    <div class="muted-note" style="margin-bottom:12px">Pilih semua teks di bawah lalu salin secara manual, simpan di tempat aman.</div>
+    <div class="field"><textarea id="bk-out" class="mono" readonly style="min-height:170px">${esc(str)}</textarea></div>
+    <button class="btn block" data-close>Tutup</button>`);
+  const ta=sheet.querySelector('#bk-out'); if(ta){ ta.focus(); ta.select(); }
+}
+
+// ---- impor ----
+function importPick(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json,text/plain';
+  inp.style.display='none';
+  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f){ return; }
+    const rd=new FileReader();
+    rd.onload=()=>handleImportText(String(rd.result||''));
+    rd.onerror=()=>toast('Gagal membaca berkas');
+    rd.readAsText(f); };
+  document.body.appendChild(inp); inp.click();
+  setTimeout(()=>{ try{ document.body.removeChild(inp); }catch(e){} },60000);
+}
+function importPasteSheet(){
+  openSheet(`<h3>Tempel teks cadangan</h3>
+    <div class="muted-note" style="margin-bottom:12px">Tempel seluruh isi berkas cadangan HILAL (format JSON) di kotak ini.</div>
+    <div class="field"><textarea id="bk-paste" class="mono" placeholder='{ "app": "HILAL", "kind": "hilal-backup", \u2026 }' style="min-height:150px"></textarea></div>
+    <button class="btn primary block" data-backup="paste-go">Lanjut</button>
+    <button class="btn ghost block" data-close style="margin-top:9px">Batal</button>`);
+}
+function handleImportText(text){
+  let obj; try{ obj=JSON.parse(text); }catch(e){ toast('Berkas bukan JSON yang sah'); return; }
+  let data=null;
+  if(obj && obj.kind==='hilal-backup' && obj.data && typeof obj.data==='object') data=obj.data;
+  else if(obj && typeof obj==='object' && (obj.profile||obj.custom||obj.settings||obj.locks)) data=obj; // toleran: state mentah / versi lama
+  if(!data){ toast('Ini bukan berkas cadangan HILAL'); return; }
+  pendingImport={ data, summary:summarizeData(data),
+    when:(obj&&obj.exportedAtG)||null, whenH:(obj&&obj.exportedAtH)||null };
+  importMode='merge';
+  importPreviewSheet();
+}
+function importPreviewSheet(){
+  const p=pendingImport; if(!p) return; const s=p.summary;
+  const when=p.when?`<div class="bk-row"><span class="k">Diekspor</span><span class="v">${esc(p.when)}${p.whenH?(' \u00b7 '+esc(p.whenH)):''}</span></div>`:'';
+  openSheet(`<h3>Pulihkan data</h3>
+    <div class="muted-note" style="margin-bottom:8px">Berkas ini berisi progres berikut. Pilih cara memulihkan, lalu tinjau sekali lagi sebelum melanjutkan.</div>
+    ${summaryRows(s,when)}
+    <div class="field" style="margin-bottom:8px"><label>Cara memulihkan</label>
+      <div class="seg" id="bk-mode">
+        <button data-bkmode="merge" class="on">Gabungkan</button>
+        <button data-bkmode="replace">Ganti total</button>
+      </div></div>
+    <div class="muted-note" id="bk-modedesc">${bkModeDesc('merge')}</div>
+    <button class="btn primary block" data-backup="apply" style="margin-top:14px">Pulihkan sekarang</button>
+    <button class="btn ghost block" data-close style="margin-top:9px">Batal</button>`);
+  const seg=sheet.querySelector('#bk-mode');
+  if(seg) seg.querySelectorAll('button').forEach(b=> b.onclick=()=>{
+    importMode=b.dataset.bkmode;
+    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    const d=sheet.querySelector('#bk-modedesc'); if(d) d.textContent=bkModeDesc(importMode);
+  });
+}
+function bkModeDesc(m){
+  return m==='replace'
+    ? 'Ganti total: data di perangkat ini dihapus dan diganti seluruhnya oleh isi berkas. Cocok untuk perangkat baru atau memulai dari cadangan tertentu.'
+    : 'Gabungkan (disarankan): progres dari berkas ditambahkan ke progres di perangkat ini \u2014 tidak ada yang hilang. Artefak yang sudah terbuka tetap terbuka, hari ibadah digabung, dan skor mengambil nilai tertinggi.';
+}
+function applyImport(){
+  const p=pendingImport; if(!p) return;
+  if(importMode==='replace') replaceState(p.data); else mergeState(p.data);
+  save();
+  if(S.profile.started) profileSync(); else titleSync();
+  pendingImport=null; closeSheet(); render();
+  toast(importMode==='replace'?'Data diganti dari berkas':'Data berhasil digabungkan');
+}
+
+// ---- normalisasi & strategi tulis ----
+function hydrateState(raw){
+  let s; try{ s=Object.assign(JSON.parse(JSON.stringify(DEFAULT)), raw||{}); }catch(e){ s=JSON.parse(JSON.stringify(DEFAULT)); }
+  s.profile=Object.assign(JSON.parse(JSON.stringify(DEFAULT.profile)), (raw&&raw.profile)||{});
+  s.profile.q=Object.assign(JSON.parse(JSON.stringify(DEFAULT.profile.q)), (raw&&raw.profile&&raw.profile.q)||{});
+  s.profile.track=(raw&&raw.profile&&raw.profile.track&&typeof raw.profile.track==='object')?raw.profile.track:{};
+  if(!Array.isArray(s.profile.artifacts)) s.profile.artifacts=['truth'];
+  if(!s.profile.artifacts.includes('truth')) s.profile.artifacts.unshift('truth');
+  s.settings=Object.assign(JSON.parse(JSON.stringify(DEFAULT.settings)), (raw&&raw.settings)||{});
+  s.locks=(raw&&raw.locks&&typeof raw.locks==='object')?raw.locks:{};
+  s.custom=Array.isArray(raw&&raw.custom)?raw.custom.filter(c=>c&&typeof c==='object'):[];
+  s.dismissed=(raw&&raw.dismissed&&typeof raw.dismissed==='object')?raw.dismissed:{};
+  return s;
+}
+function replaceState(data){ const h=hydrateState(data);
+  S.settings=h.settings; S.locks=h.locks; S.custom=h.custom; S.dismissed=h.dismissed; S.profile=h.profile; }
+function mergeState(data){ const h=hydrateState(data); const P=S.profile, I=h.profile;
+  // reminder: gabung berdasar id (yang sudah ada menang bila bentrok), id kosong diberi id baru
+  const ids=new Set(S.custom.map(c=>c&&c.id));
+  for(const c of h.custom){ if(!c) continue; if(c.id==null) c.id='c'+Date.now()+Math.floor(Math.random()*1000);
+    if(!ids.has(c.id)){ S.custom.push(c); ids.add(c.id); } }
+  // kunci tanggal: isi yang belum ada saja
+  for(const k in h.locks){ if(!(k in S.locks)) S.locks[k]=h.locks[k]; }
+  // banner ditutup: union
+  for(const k in h.dismissed){ S.dismissed[k]=true; }
+  // profil
+  P.started=!!(P.started||I.started);
+  P.startedAt=[P.startedAt,I.startedAt].filter(Boolean).sort()[0]||P.startedAt||I.startedAt||null;
+  P.score=Math.max(P.score||0, I.score||0);
+  const valid=new Set(['truth'].concat(CATS.map(c=>c.k)));
+  const m=new Set(['truth']);
+  (P.artifacts||[]).forEach(a=>{ if(valid.has(a)) m.add(a); });
+  (I.artifacts||[]).forEach(a=>{ if(valid.has(a)) m.add(a); });
+  P.artifacts=[...m];
+  // jejak hari: union; 'done' mengalahkan status lain
+  for(const k in I.track){ const inc=I.track[k]; if(!inc) continue; const cur=P.track[k];
+    if(!cur) P.track[k]=inc; else if(cur.s!=='done'&&inc.s==='done') P.track[k]=inc; }
+  // quest: ambil batch/progres dari hari yang lebih baru
+  if((I.q.day||'') > (P.q.day||'')) P.q=JSON.parse(JSON.stringify(I.q));
+}
+
+/* ============================================================
    TOAST + ROUTING
    ============================================================ */
 let toastT;
@@ -1573,7 +1798,7 @@ $('#fab').onclick=()=>customForm(null);
 
 /* ---------- delegated clicks ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],[data-questbegin],[data-goto],[data-track],[data-titledetail],[data-dev],#installBtn,#persistBtn,#aboutBtn');
+  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],[data-questbegin],[data-goto],[data-track],[data-titledetail],[data-backup],[data-dev],#installBtn,#persistBtn,#aboutBtn');
   if(!t) return;
   if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderFeedArea(); return; }
   if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
@@ -1596,6 +1821,16 @@ document.addEventListener('click',e=>{
   if(t.dataset.questbegin){ startJourney(); return; }
   if(t.dataset.goto){ go(t.dataset.goto); return; }
   if(t.dataset.titledetail){ openTitleSheet(t.dataset.titledetail); return; }
+  if(t.dataset.backup){ const b=t.dataset.backup;
+    if(b==='export') exportSheet();
+    else if(b==='download') downloadBackup();
+    else if(b==='share') shareBackup();
+    else if(b==='copy') copyBackup();
+    else if(b==='import') importPick();
+    else if(b==='paste') importPasteSheet();
+    else if(b==='paste-go'){ const ta=$('#bk-paste'); const v=ta?ta.value:''; if(!v.trim()){ toast('Belum ada teks'); return; } handleImportText(v); }
+    else if(b==='apply') applyImport();
+    return; }
   if(t.dataset.track){ setTrack(t.dataset.track,t.dataset.trackcat,t.dataset.trackday,t.dataset.trackstate,t.dataset.trackalso||null);
     if(tab==='cal') showCalDay(fromISO(t.dataset.trackday)); else render(); return; }
   if(t.dataset.dev){ devAction(t.dataset.dev); return; }

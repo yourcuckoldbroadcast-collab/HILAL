@@ -1260,6 +1260,7 @@ function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.
 function syawalCount(){ const hy=g2h(new Date()).hy; const s={};
   for(const k in S.profile.track){ const r=S.profile.track[k]; if(r&&r.s==='done'&&r.c==='puasa'){ const hh=g2h(fromISO(r.d)); if(hh.hm===10&&hh.hy===hy) s[r.d]=1; } }
   return Object.keys(s).length; }
+function trkState(key){ const r=S.profile.track[key]; return r?r.s:null; }
 function setTrack(key,cat,dayISO,state,also){ const cur=trkState(key); const ak=also?(key+'|'+also):null;
   if(cur===state){ delete S.profile.track[key]; if(ak) delete S.profile.track[ak]; }
   else { S.profile.track[key]={s:state,c:cat,d:dayISO}; if(state==='done') questProgress(cat,dayISO);

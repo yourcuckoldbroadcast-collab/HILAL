@@ -1784,14 +1784,15 @@ function mergeState(data){ const h=hydrateState(data); const P=S.profile, I=h.pr
    TOAST + ROUTING
    ============================================================ */
 let toastT;
-function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+function toast(m,ms){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),ms||1900); }
 
 let tab='home';
+let lastRenderDay=null;   // tanggal lokal yang tercermin oleh tampilan saat ini
 function go(t){ tab=t; document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   $('#v-'+t).classList.add('active');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
   render(); window.scrollTo({top:0,behavior:'smooth'}); }
-function render(){ if(tab==='home')renderHome(); else if(tab==='cal')renderCal(); else if(tab==='notes')renderNotes(); else if(tab==='profil')renderProfil(); else renderSet(); }
+function render(){ if(tab==='home')renderHome(); else if(tab==='cal')renderCal(); else if(tab==='notes')renderNotes(); else if(tab==='profil')renderProfil(); else renderSet(); lastRenderDay=toISO(new Date()); }
 
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 $('#fab').onclick=()=>customForm(null);
@@ -1854,7 +1855,59 @@ async function doPersist(){ if(!navigator.storage||!navigator.storage.persist){ 
   const ok=await navigator.storage.persist(); toast(ok?'Penyimpanan permanen aktif':'Permintaan ditolak browser'); refreshPersistUI(); }
 
 /* ---------- service worker ---------- */
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+let swReg=null;
+if('serviceWorker' in navigator){
+  const wasControlled=!!navigator.serviceWorker.controller;   // sudah pernah dikontrol = pengunjung lama
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').then(reg=>{ swReg=reg; }).catch(()=>{}); });
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(wasControlled) toast('Versi terbaru HILAL aktif'); });
+}
+
+/* ============================================================
+   REFRESH SAAT RESUME + OPTIMASI ONLINE-FIRST
+   - Resume/ganti hari: hitung ulang "hari ini" & render ulang
+     (memperbaiki penanda hari yang basi, mis. Sedekah Subuh).
+   - Online sebagai keuntungan, TANPA mengorbankan offline:
+     (1) jaga aplikasi tetap versi terbaru selagi terhubung,
+     (2) penjaga ketepatan jam perangkat demi integritas tanggal
+         Hijriah \u2014 verifikasi gratis lewat header waktu hosting
+         kita sendiri. Semua dibungkus try/catch + cek onLine,
+         sehingga saat offline jalurnya identik seperti sebelumnya.
+   ============================================================ */
+let clockCheckedThisSession=false;
+
+function refreshIfStale(){
+  if(document.hidden) return;
+  if(modal.classList.contains('show')) return;            // jangan ganggu lembar yang sedang terbuka
+  const today=toISO(new Date());
+  if(today!==lastRenderDay){                              // hari benar-benar berganti sejak render terakhir
+    if(S.profile.started) profileSync();                  // gulung quest harian ke hari baru
+    render();                                             // recompute hari ini, hitung mundur, penanda amal
+  }
+}
+function onResume(){ refreshIfStale(); onlineBoost(); }
+
+function onlineBoost(){
+  if(!navigator.onLine) return;                           // offline: tak melakukan apa pun (jalur lama utuh)
+  if(swReg && swReg.update){ try{ swReg.update(); }catch(e){} }   // tarik versi terbaru bila ada
+  if(!clockCheckedThisSession){ clockCheckedThisSession=true; checkClockDrift(); }
+}
+async function checkClockDrift(){
+  if(!navigator.onLine) return;
+  try{
+    const res=await fetch('./?_clk='+Date.now(),{method:'HEAD',cache:'no-store'});
+    const ds=res.headers.get('date'); if(!ds) return;     // membandingkan dua instan UTC: zona waktu tak relevan
+    const server=new Date(ds).getTime(); if(!server) return;
+    const drift=Math.abs(Date.now()-server);
+    if(drift>5*60*1000){                                  // ambang longgar 5 menit -> hanya jam yang benar-benar meleset
+      toast('Jam perangkat tampak meleset \u00b1'+Math.round(drift/60000)+' menit dari waktu jaringan \u2014 bila tanggal terasa keliru, sesuaikan di Atur \u2192 Geser hari.',6500);
+    }
+  }catch(e){ /* offline / HEAD diblokir / file:// -> diabaikan */ }
+}
+
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) onResume(); });
+window.addEventListener('pageshow',()=>onResume());
+window.addEventListener('focus',()=>onResume());
+window.addEventListener('online',()=>onResume());
 
 /* ---------- boot ---------- */
 (function(){ const el=$('#todayMini'); if(!el) return; let n=0,t0=0;
@@ -1862,6 +1915,7 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.s
     if(n>=7){ n=0; S._dev=!S._dev; save(); toast(S._dev?'Mode pengembang aktif':'Mode pengembang nonaktif'); if(tab==='set')renderSet(); } }); })();
 if(S.profile.started) profileSync();
 render();
+onResume();   // online user dapat cek versi + ketepatan jam sejak load pertama
 </script>
 </body>
 </html>

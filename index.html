@@ -439,6 +439,7 @@ img.em{ object-fit:contain; }
 .trk button.dn.on{ background:linear-gradient(160deg,#2e8b6f,#1c5e49); color:var(--cream); border-color:transparent; }
 .trk button.sk.on{ background:rgba(201,138,106,.22); color:var(--danger); border-color:rgba(201,138,106,.4); }
 .chk-cat{ font-size:11px; color:var(--muted); }
+.chk-cat .trk-time{ color:var(--gold-hi); }
 .today-card .evt .body .t{ font-size:15px; }
 /* dev mode */
 .devlbl{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:14px 0 8px; }
@@ -768,10 +769,12 @@ function renderHome(){
       if(heroDone && totalT>=1 && doneT===totalT){ seal='Semua selesai'; eyebrow='Hari ini'; }
       else if(heroDone){ seal='Sudah ditandai'; eyebrow='Hari ini'; }
       else seal='Hari Ini';
+      const sl = (!heroDone) ? scheduleForEvent(hero).label : '';
+      const sealSub = sl ? `<span class="seal-sub">${esc(sl)}</span>` : '';
       const prog = totalT>=2
         ? `<div class="hero-prog"><span class="t">${resolvedT}/${totalT} ditandai</span><span class="bar"><i style="width:${Math.round(resolvedT/totalT*100)}%"></i></span></div>`
         : '';
-      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">${seal}</span></div>${prog}`;
+      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">${seal}</span>${sealSub}</div>${prog}`;
     } else if(n===1){                // besok \u2014 frasa + tanggal target (bukan hari ini, jadi tak duplikat)
       temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">Besok</span><span class="seal-sub">${esc(wd)} \u00b7 ${esc(dG)}</span></div>`;
     } else if(n<0){
@@ -822,11 +825,41 @@ function renderHome(){
 }
 function recurDesc2(e){ return e.recurDesc||''; }
 
+/* ---------- waktu kegiatan (untuk urutan kronologis) ---------- */
+const ANYTIME=2000;                                   // anchor untuk amal tanpa jam \u2014 disusun paling akhir
+function fmtClock(t){ return (t||'').replace(':','.'); }   // 07:30 -> 07.30 (gaya Indonesia)
+const SYS_SCHED={                                     // jam baku ibadah sistem (patokan WIB / GMT+7): {anchor menit sejak tengah malam, label}
+  // semua puasa: persiapan Sahur mulai 03.00 WIB
+  'sys-senin':{min:180,label:'Sahur 03.00 WIB'}, 'sys-kamis':{min:180,label:'Sahur 03.00 WIB'},
+  'sys-ab':{min:180,label:'Sahur 03.00 WIB'}, 'sys-arafah':{min:180,label:'Sahur 03.00 WIB'},
+  'sys-tasua':{min:180,label:'Sahur 03.00 WIB'}, 'sys-asyura':{min:180,label:'Sahur 03.00 WIB'},
+  'sys-syawal':{min:180,label:'Sahur 03.00 WIB'},
+  'sys-subuh':{min:285,label:'04.45 WIB'},          // Sedekah Subuh mulai 04.45 WIB
+  'sys-kahfi':{min:300,label:'05.00 WIB'},          // Al-Kahfi mulai 05.00 WIB
+  'sys-tasbih':{min:120,label:'02.00 WIB'},         // Qiyamul Lail \u2014 mulai 02.00 WIB (memimpin hari)
+};
+function clockMin(t){ const p=(t||'').split(':'); const m=(+p[0])*60+(+p[1]); return isNaN(m)?null:m; }
+// Jadwal untuk satu item dapat-ditandai (sistem via prefix kunci, kustom via jam yang diisi pengguna).
+function schedule(it){
+  const id=(it.key||'').split('@')[0];
+  if(SYS_SCHED[id]) return SYS_SCHED[id];
+  let c=it.customId? S.custom.find(x=>x.id===it.customId) : (id.indexOf('u-')===0? S.custom.find(x=>x.id===id.slice(2)) : null);
+  if(c&&c.time){ const m=clockMin(c.time); if(m!=null) return {min:m,label:fmtClock(c.time)}; }
+  return {min:ANYTIME,label:''};
+}
+// Jadwal untuk sebuah event beranda (kustom via jam; sistem via padanan trackable; informatif -> tanpa waktu).
+function scheduleForEvent(e){
+  if(e.customId){ const c=S.custom.find(x=>x.id===e.customId); if(c&&c.time){ const m=clockMin(c.time); if(m!=null) return {min:m,label:fmtClock(c.time)}; } return {min:ANYTIME,label:''}; }
+  const k=trackKeyForEventToday(e); if(k){ const id=k.split('@')[0]; if(SYS_SCHED[id]) return SYS_SCHED[id]; }
+  return {min:ANYTIME,label:''};
+}
+
 function pickHero(events){
   const today=noon(new Date());
   const todays=events.filter(e=>sameDay(e.date,today)).sort((a,b)=>prio(b)-prio(a));
   if(todays.length){
-    const pending=todays.filter(e=>!eventResolvedToday(e));   // utamakan yang belum ditandai \u2014 hero maju ke ibadah berikutnya
+    const pending=todays.filter(e=>!eventResolvedToday(e))
+      .sort((a,b)=> scheduleForEvent(a).min - scheduleForEvent(b).min || prio(b)-prio(a));   // kronologis; prioritas sbg pemecah seri
     return pending[0]||todays[0];
   }
   const ann=events.filter(e=>e.cat==='annual'&&daysFromToday(e.date)>=0&&daysFromToday(e.date)<=60);
@@ -1002,7 +1035,7 @@ function renderNotes(){
       h+=`<div class="evt" data-edit="${c.id}">
         <div class="when"><div class="n" style="font-size:13px;line-height:1.2;padding-top:4px">${c.type==='once'?'1\u00d7':'\u21bb'}</div></div>
         <div class="body"><div class="t">${esc(c.title)}</div>
-          <div class="m"><span class="cat-dot cat-user"></span>${esc(recurDesc(c))}${occ?' \u00b7 '+esc(fmtGshort(occ)):''}</div>
+          <div class="m"><span class="cat-dot cat-user"></span>${esc(recurDesc(c))}${c.time?' \u00b7 '+esc(fmtClock(c.time)):''}${occ?' \u00b7 '+esc(fmtGshort(occ)):''}</div>
           ${c.note?`<div class="m">${esc(c.note)}</div>`:''}
         </div></div>`;
     });
@@ -1354,7 +1387,8 @@ function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.
   if(day===5) add('sys-kahfi','tilawah','Baca Surah Al-Kahfi');
   if(day===4 && h.hd<=7) addDual('sys-tasbih','shalat','qiyamul','Shalat Tasbih');   // malam Jumat pertama bulan Hijriah
   if(sameDay(g,noon(new Date()))) add('sys-subuh','infaq','Sedekah Subuh');           // hanya hari ini, tanpa penanda kalender
-  for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g)}); }
+  for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g),customId:c.id}); }
+  out.sort((a,b)=> schedule(a).min - schedule(b).min);   // urutkan amal hari ini menurut waktunya (tak lagi acak)
   return out; }
 function syawalCount(){ const hy=g2h(new Date()).hy; const s={};
   for(const k in S.profile.track){ const r=S.profile.track[k]; if(r&&r.s==='done'&&r.c==='puasa'){ const hh=g2h(fromISO(r.d)); if(hh.hm===10&&hh.hy===hy) s[r.d]=1; } }
@@ -1411,9 +1445,10 @@ function pieSVG(tally){ const entries=CATS.map(c=>({c,n:tally[c.k]||0})).filter(
 function trkControls(item){ const st=trkState(item.key);
   const cat=CATMAP[item.cat]?CATMAP[item.cat].t:item.cat;
   const alsoAttr=item.also?` data-trackalso="${item.also}"`:'';
-  const catLabel=item.also
+  const sc=schedule(item); const timeChip=sc.label?` <span class="trk-time">\u00b7 ${esc(sc.label)}</span>`:'';
+  const catLabel=(item.also
     ? `Kategori: ${esc(cat)} + ${esc(CATMAP[item.also]?CATMAP[item.also].t:item.also)} <span style="color:var(--gold-hi)">\u00b7 poin ganda</span>`
-    : `Kategori: ${esc(cat)}`;
+    : `Kategori: ${esc(cat)}`) + timeChip;
   return `<div class="chk-cat">${catLabel}</div><div class="trk">
     <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done" data-tracktitle="${esc(item.t)}"${alsoAttr}>\u2713</button>
     <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip" data-tracktitle="${esc(item.t)}"${alsoAttr}>\u2715</button></div>`; }
@@ -1567,6 +1602,8 @@ function customForm(existing){
     <div class="field" id="f-weekly" style="display:${c.type==='weekly'?'block':'none'}"><label>Hari</label>
       <select id="f-weekday">${DG.map((d,i)=>`<option value="${i}" ${c.weekday===i?'selected':''}>${d}</option>`).join('')}</select></div>
     <div class="field" id="f-monthly" style="display:${c.type==='monthly'?'block':'none'}"><label>Tanggal setiap bulan</label><input type="number" id="f-monthday" min="1" max="31" value="${c.monthday||1}"/></div>
+    <div class="field"><label>Jam kegiatan (opsional)</label><input type="time" id="f-time" value="${c.time||''}"/>
+      <div class="muted-note" style="margin-top:6px">Untuk mengurutkan amal hari ini sesuai waktunya di Catatan &amp; Beranda. Kosongkan bila waktunya bebas.</div></div>
     <div class="field"><label>Catatan (opsional)</label><textarea id="f-note" placeholder="Detail singkat...">${esc(c.note||'')}</textarea></div>
     <button class="btn primary block" id="f-save">${existing?'Simpan perubahan':'Tambah catatan'}</button>
     ${existing?`<button class="btn ghost block" id="f-del" style="margin-top:9px;color:var(--danger)">Hapus catatan</button>`:''}`);
@@ -1583,6 +1620,7 @@ function customForm(existing){
     if(type==='once') obj.date=$('#f-date').value;
     if(type==='weekly') obj.weekday=+$('#f-weekday').value;
     if(type==='monthly') obj.monthday=Math.min(31,Math.max(1,+$('#f-monthday').value||1));
+    const tm=$('#f-time').value; if(tm) obj.time=tm;
     if(existing){ const i=S.custom.findIndex(x=>x.id===existing.id); S.custom[i]=obj; } else S.custom.push(obj);
     save(); closeSheet(); toast('Tersimpan'); render();
   };

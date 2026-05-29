@@ -118,6 +118,10 @@ body::before{ /* faint star field */
   background:linear-gradient(92deg,var(--gold-hi),var(--gold)); -webkit-background-clip:text; background-clip:text;
   -webkit-text-fill-color:transparent; color:var(--gold-hi); }
 .hero-now .seal-sub{ font-family:var(--serif); font-style:italic; font-size:13px; color:var(--cream-2); }
+.hero-prog{ position:relative; z-index:1; margin-top:12px; display:flex; align-items:center; gap:10px; }
+.hero-prog .t{ font-family:var(--sans); font-size:11px; letter-spacing:.08em; color:var(--cream-2); white-space:nowrap; }
+.hero-prog .bar{ flex:1; max-width:130px; height:3px; border-radius:2px; background:var(--line-soft); overflow:hidden; }
+.hero-prog .bar i{ display:block; height:100%; border-radius:2px; background:linear-gradient(90deg,var(--gold-hi),var(--gold)); transition:width .3s ease; }
 .hero-count{ position:relative; z-index:1; display:flex; align-items:flex-end; gap:13px; flex-wrap:wrap; }
 .hero-count .num{ font-family:var(--serif); font-weight:600; font-size:50px; line-height:.9;
   background:linear-gradient(92deg,var(--gold-hi),var(--gold)); -webkit-background-clip:text; background-clip:text;
@@ -505,7 +509,7 @@ const DGS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const MS = 86400000;
 
 /* ---------- state ---------- */
-const DEFAULT = { settings:{ dayOffset:0, feedMode:'countdays' }, locks:{}, custom:[], dismissed:{},
+const DEFAULT = { settings:{ dayOffset:0, feedMode:'countdays', confirmTrack:true }, locks:{}, custom:[], dismissed:{},
   profile:{ started:false, startedAt:null, track:{}, score:0,
     title:{key:'truth',hy:null,hm:null}, artifacts:['truth'],
     q:{ day:null, batch:[], batchN:1, doneToday:0, exhausted:false, maxedStreak:0, penaltyUntil:null, lastDone:null } } };
@@ -753,10 +757,21 @@ function renderHome(){
     else if(hero.weekly) sub='Setiap '+esc(wd);
     else if(hero.hijri) sub=esc(fmtH(hero.hijri));
     else if(hero.recurDesc) sub=esc(hero.recurDesc);
-    const eyebrow = n===0?'Sedang berlangsung':'Momentum terdekat';
+    let eyebrow = n===0?'Sedang berlangsung':'Momentum terdekat';
     let temporal;
-    if(n===0){                       // hari ini \u2014 frasa, bukan angka raksasa; tanpa tanggal (tak menduplikasi strip)
-      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">Hari Ini</span></div>`;
+    if(n===0){                       // hari ini \u2014 sadar penyelesaian: maju, tunjukkan progres & status
+      const tl=trackablesOnDay(new Date()); const totalT=tl.length;
+      let doneT=0, resolvedT=0;
+      for(const it of tl){ const s=trkState(it.key); if(s==='done'){doneT++;resolvedT++;} else if(s==='skip'){resolvedT++;} }
+      const heroDone=eventResolvedToday(hero);
+      let seal;
+      if(heroDone && totalT>=1 && doneT===totalT){ seal='Semua selesai'; eyebrow='Hari ini'; }
+      else if(heroDone){ seal='Sudah ditandai'; eyebrow='Hari ini'; }
+      else seal='Hari Ini';
+      const prog = totalT>=2
+        ? `<div class="hero-prog"><span class="t">${resolvedT}/${totalT} ditandai</span><span class="bar"><i style="width:${Math.round(resolvedT/totalT*100)}%"></i></span></div>`
+        : '';
+      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">${seal}</span></div>${prog}`;
     } else if(n===1){                // besok \u2014 frasa + tanggal target (bukan hari ini, jadi tak duplikat)
       temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">Besok</span><span class="seal-sub">${esc(wd)} \u00b7 ${esc(dG)}</span></div>`;
     } else if(n<0){
@@ -810,10 +825,24 @@ function recurDesc2(e){ return e.recurDesc||''; }
 function pickHero(events){
   const today=noon(new Date());
   const todays=events.filter(e=>sameDay(e.date,today)).sort((a,b)=>prio(b)-prio(a));
-  if(todays.length) return todays[0];
+  if(todays.length){
+    const pending=todays.filter(e=>!eventResolvedToday(e));   // utamakan yang belum ditandai \u2014 hero maju ke ibadah berikutnya
+    return pending[0]||todays[0];
+  }
   const ann=events.filter(e=>e.cat==='annual'&&daysFromToday(e.date)>=0&&daysFromToday(e.date)<=60);
   if(ann.length) return ann[0];
   return events.find(e=>daysFromToday(e.date)>=0)||events[0];
+}
+// Apakah event hari ini sudah ditandai (selesai/terlewat)? Kunci jejak: kustom via id, sistem via judul.
+function trackKeyForEventToday(e){
+  const iso=toISO(noon(e.date));
+  if(e.customId) return 'u-'+e.customId+'@'+iso;
+  const m=trackablesOnDay(new Date()).find(it=>it.t===e.t);
+  return m?m.key:null;
+}
+function eventResolvedToday(e){
+  const k=trackKeyForEventToday(e); if(!k) return false;
+  const s=trkState(k); return s==='done'||s==='skip';
 }
 
 function evtRow(e){
@@ -996,6 +1025,16 @@ function renderSet(){
         <div class="l"><div class="t">Geser hari Hijriah</div>
           <div class="d">Hari ini menurut HILAL: <b style="color:var(--gold-hi)">${th.hd} ${MH[th.hm-1]} ${th.hy}</b>. Jika berbeda dengan tanggal di tempatmu, geser \u00b1 hari.</div></div>
         <div class="stepper"><button data-off="-1">\u2212</button><div class="v">${off>0?'+':''}${off}</div><button data-off="1">+</button></div>
+      </div>
+    </div>`;
+  // tracking behaviour
+  const ct = S.settings.confirmTrack!==false;
+  h+=`<div class="section-title">Pencatatan amal</div>
+    <div class="card">
+      <div class="set-row">
+        <div class="l"><div class="t">Konfirmasi sebelum menandai</div>
+          <div class="d">Tanya dulu sebelum menandai amal <b style="color:var(--gold-hi)">selesai</b> atau <b style="color:var(--danger)">terlewat</b>, agar tak salah ketuk. Matikan untuk mencentang lebih cepat.</div></div>
+        <button class="btn ${ct?'primary':'ghost'}" data-confirmtrack="${ct?'off':'on'}">${ct?'Aktif':'Nonaktif'}</button>
       </div>
     </div>`;
   // isbat locks
@@ -1376,8 +1415,8 @@ function trkControls(item){ const st=trkState(item.key);
     ? `Kategori: ${esc(cat)} + ${esc(CATMAP[item.also]?CATMAP[item.also].t:item.also)} <span style="color:var(--gold-hi)">\u00b7 poin ganda</span>`
     : `Kategori: ${esc(cat)}`;
   return `<div class="chk-cat">${catLabel}</div><div class="trk">
-    <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done"${alsoAttr}>\u2713</button>
-    <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip"${alsoAttr}>\u2715</button></div>`; }
+    <button class="dn ${st==='done'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="done" data-tracktitle="${esc(item.t)}"${alsoAttr}>\u2713</button>
+    <button class="sk ${st==='skip'?'on':''}" data-track="${item.key}" data-trackcat="${item.cat}" data-trackday="${item.day}" data-trackstate="skip" data-tracktitle="${esc(item.t)}"${alsoAttr}>\u2715</button></div>`; }
 function renderProfil(){ const v=$('#v-profil'); $('#fab').style.display='none';
   if(!S.profile.started){
     v.innerHTML=`<div class="stagger"><div class="section-title">Profil ibadah</div>
@@ -1489,6 +1528,28 @@ const modal=$('#modal'), sheet=$('#sheet');
 function openSheet(html){ sheet.innerHTML='<div class="grab"></div>'+html; modal.classList.add('show'); }
 function closeSheet(){ modal.classList.remove('show'); }
 modal.addEventListener('click',e=>{ if(e.target.hasAttribute('data-close')) closeSheet(); });
+
+/* ---------- penandaan amal: konfirmasi + sinkron tombol di tempat ---------- */
+let pendingTrack=null;
+function openTrackConfirm(p){
+  const title=p.title||'kegiatan ini'; const cur=trkState(p.key);
+  let msg, yes;
+  if(cur===p.state){ msg=`Batalkan tanda pada \u201c${esc(title)}\u201d?`; yes='Ya, batalkan'; }
+  else if(p.state==='done'){ msg=`Tandai \u201c${esc(title)}\u201d sebagai <b style="color:var(--gold-hi)">selesai</b> untuk hari ini?`; yes='Ya, tandai selesai'; }
+  else { msg=`Tandai \u201c${esc(title)}\u201d sebagai <b style="color:var(--danger)">terlewat</b> untuk hari ini?`; yes='Ya, tandai terlewat'; }
+  pendingTrack=p;
+  openSheet(`<h3>Konfirmasi</h3>
+    <div class="muted-note" style="font-size:14px;line-height:1.65;margin-bottom:16px">${msg}</div>
+    <button class="btn primary block" data-trackconfirm="1">${yes}</button>
+    <button class="btn ghost block" data-close style="margin-top:9px">Batal</button>`);
+}
+// Perbarui hanya pasangan tombol untuk satu kunci \u2014 tanpa render ulang seluruh tampilan (tak ada loncatan gulir / animasi ulang).
+function syncTrackButtons(key){ const st=trkState(key);
+  document.querySelectorAll('[data-track]').forEach(b=>{ if(b.dataset.track!==key) return;
+    const done=b.dataset.trackstate==='done';
+    b.classList.toggle('on', done? st==='done' : st==='skip'); }); }
+function applyTrack(p){ setTrack(p.key,p.cat,p.day,p.state,p.also);
+  if(tab==='cal') showCalDay(fromISO(p.day)); else syncTrackButtons(p.key); }
 
 function customForm(existing){
   const c=existing||{type:'once',title:'',note:'',date:toISO(new Date()),weekday:1,monthday:noon(new Date()).getDate(),category:'dzikir'};
@@ -1841,7 +1902,7 @@ $('#fab').onclick=()=>customForm(null);
 
 /* ---------- delegated clicks ---------- */
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],[data-questbegin],[data-goto],[data-track],[data-titledetail],[data-backup],[data-dev],#installBtn,#persistBtn,#aboutBtn');
+  const t=e.target.closest('[data-mode],[data-evt],[data-season],[data-calmode],[data-caltoday],[data-cal],[data-date],[data-off],[data-lockset],[data-lockclear],[data-dismiss],[data-edit],[data-questbegin],[data-goto],[data-track],[data-trackconfirm],[data-confirmtrack],[data-titledetail],[data-backup],[data-dev],#installBtn,#persistBtn,#aboutBtn');
   if(!t) return;
   if(t.dataset.mode){ S.settings.feedMode=t.dataset.mode; save(); renderFeedArea(); return; }
   if(t.dataset.evt && !e.target.closest('[data-edit]')){ const r=t.closest('.evt'); if(r) r.classList.toggle('open'); return; }
@@ -1874,8 +1935,12 @@ document.addEventListener('click',e=>{
     else if(b==='paste-go'){ const ta=$('#bk-paste'); const v=ta?ta.value:''; if(!v.trim()){ toast('Belum ada teks'); return; } handleImportText(v); }
     else if(b==='apply') applyImport();
     return; }
-  if(t.dataset.track){ setTrack(t.dataset.track,t.dataset.trackcat,t.dataset.trackday,t.dataset.trackstate,t.dataset.trackalso||null);
-    if(tab==='cal') showCalDay(fromISO(t.dataset.trackday)); else render(); return; }
+  if(t.dataset.track){
+    const p={key:t.dataset.track,cat:t.dataset.trackcat,day:t.dataset.trackday,state:t.dataset.trackstate,also:t.dataset.trackalso||null,title:t.dataset.tracktitle};
+    if(S.settings.confirmTrack!==false) openTrackConfirm(p); else applyTrack(p);
+    return; }
+  if(t.dataset.trackconfirm){ const p=pendingTrack; pendingTrack=null; closeSheet(); if(p) applyTrack(p); return; }
+  if(t.dataset.confirmtrack){ S.settings.confirmTrack=(t.dataset.confirmtrack==='on'); save(); renderSet(); return; }
   if(t.dataset.dev){ devAction(t.dataset.dev); return; }
 });
 

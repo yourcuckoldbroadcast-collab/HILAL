@@ -89,26 +89,49 @@ body::before{ /* faint star field */
   color:var(--muted); margin:22px 4px 12px; display:flex; align-items:center; gap:10px; }
 .section-title::after{ content:""; flex:1; height:1px; background:var(--line-soft); }
 
-/* ---------- hero ---------- */
-.hero{ position:relative; overflow:hidden;
+/* ---------- hero (momentum unggulan) ---------- */
+.hero{ position:relative; overflow:hidden; isolation:isolate;
   background:
-    radial-gradient(120% 120% at 88% -20%, rgba(203,166,78,.18), transparent 55%),
-    linear-gradient(155deg,#10463a,#0a2c23);
-  border:1px solid var(--line); border-radius:24px; padding:24px 22px 22px;
-  box-shadow:var(--shadow); }
-.hero .moon{ position:absolute; right:-26px; top:-30px; width:150px; height:150px; opacity:.9; }
-.hero .kicker{ font-size:11px; letter-spacing:.26em; text-transform:uppercase; color:var(--gold);
-  display:flex; align-items:center; gap:8px; }
-.hero .kicker .dot{ width:6px; height:6px; border-radius:50%; background:var(--gold);
+    radial-gradient(130% 120% at 86% -25%, rgba(203,166,78,.20), transparent 52%),
+    radial-gradient(95% 85% at 6% 112%, rgba(15,92,87,.32), transparent 60%),
+    linear-gradient(158deg,#11483b 0%,#0b2d24 62%,#082019 100%);
+  border:1px solid var(--line); border-radius:26px; padding:22px 22px 24px;
+  box-shadow:var(--shadow), inset 0 1px 0 rgba(242,233,216,.05); }
+.hero::before{ content:""; position:absolute; top:0; left:22px; right:22px; height:1px; z-index:2;
+  background:linear-gradient(90deg,transparent,rgba(203,166,78,.5),transparent); }
+.hero .moon{ position:absolute; right:-20px; top:-24px; width:112px; height:112px; opacity:.85; z-index:0;
+  filter:drop-shadow(0 6px 16px rgba(0,0,0,.35)); }
+.hero-eyebrow{ position:relative; z-index:1; display:inline-flex; align-items:center; gap:9px;
+  font-family:var(--sans); font-size:10.5px; font-weight:600; letter-spacing:.28em; text-transform:uppercase; color:var(--gold); }
+.hero-eyebrow .dot{ width:7px; height:7px; border-radius:50%; background:var(--gold);
   box-shadow:0 0 0 0 rgba(203,166,78,.6); animation:pulse 2.4s infinite; }
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(203,166,78,.5)}70%{box-shadow:0 0 0 9px rgba(203,166,78,0)}100%{box-shadow:0 0 0 0 rgba(203,166,78,0)}}
-.hero h2{ font-family:var(--serif); font-size:30px; line-height:1.08; margin:14px 0 4px; max-width:78%; }
-.hero .hdate{ font-family:var(--serif); font-style:italic; color:var(--cream-2); font-size:14px; }
-.hero .count{ margin-top:18px; display:flex; align-items:baseline; gap:10px; }
-.hero .count .num{ font-family:var(--serif); font-size:46px; color:var(--gold-hi); line-height:1; font-weight:600; }
-.hero .count .lbl{ font-size:13px; color:var(--cream-2); letter-spacing:.04em; }
-.hero .insight{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line-soft);
-  font-size:13.5px; line-height:1.55; color:var(--cream-2); }
+.hero-title{ position:relative; z-index:1; font-family:var(--serif); font-weight:600; font-size:29px; line-height:1.14;
+  letter-spacing:.005em; color:var(--cream); margin:13px 0 0; max-width:80%; text-wrap:balance; }
+.hero-sub{ position:relative; z-index:1; margin-top:8px;
+  font-family:var(--sans); font-size:11px; letter-spacing:.17em; text-transform:uppercase; color:var(--muted); }
+.hero-sub b{ color:var(--gold-hi); font-weight:600; }
+.hero-rule{ position:relative; z-index:1; height:1px; margin:18px 0 15px;
+  background:linear-gradient(90deg,rgba(203,166,78,.3),var(--line-soft) 55%,transparent); }
+.hero-now{ position:relative; z-index:1; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+.hero-now .seal{ font-family:var(--serif); font-weight:600; font-size:25px; line-height:1; letter-spacing:.015em;
+  background:linear-gradient(92deg,var(--gold-hi),var(--gold)); -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:var(--gold-hi); }
+.hero-now .seal-sub{ font-family:var(--serif); font-style:italic; font-size:13px; color:var(--cream-2); }
+.hero-count{ position:relative; z-index:1; display:flex; align-items:flex-end; gap:13px; flex-wrap:wrap; }
+.hero-count .num{ font-family:var(--serif); font-weight:600; font-size:50px; line-height:.9;
+  background:linear-gradient(92deg,var(--gold-hi),var(--gold)); -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:var(--gold-hi); }
+.hero-count .unit{ display:flex; flex-direction:column; gap:2px; padding-bottom:6px; }
+.hero-count .unit .u{ font-family:var(--sans); font-size:12px; letter-spacing:.13em; text-transform:uppercase; color:var(--cream-2); }
+.hero-count .unit .d{ font-family:var(--serif); font-style:italic; font-size:12.5px; color:var(--muted); }
+.hero-count .tag.est{ margin-bottom:9px; }
+.hero-quote{ position:relative; z-index:1; margin-top:18px; padding:13px 16px 13px 30px; border-radius:14px;
+  background:linear-gradient(180deg,rgba(203,166,78,.07),rgba(203,166,78,.02)); border:1px solid var(--line-soft); }
+.hero-quote::before{ content:"\201C"; position:absolute; left:11px; top:2px;
+  font-family:var(--serif); font-size:40px; line-height:1; color:var(--gold); opacity:.32; }
+.hero-quote p{ margin:0; font-family:var(--serif); font-style:italic; font-size:14.5px; line-height:1.72; color:var(--cream); }
+@media (prefers-reduced-motion:reduce){ .hero-eyebrow .dot{ animation:none } }
 .tag{ display:inline-block; font-size:10px; letter-spacing:.12em; text-transform:uppercase;
   padding:3px 8px; border-radius:999px; border:1px solid var(--line); color:var(--gold);
   background:var(--gold-soft); }
@@ -721,13 +744,32 @@ function renderHome(){
   // hero
   const hero=pickHero(events);
   if(hero){
-    const wl=whenLabel(hero.date);
-    html+=`<div class="hero">${moonSVG}
-      <div class="kicker"><span class="dot"></span>${wl.now&&wl.n==='Hari'?'Sedang berlangsung':'Momentum terdekat'}</div>
-      <h2>${esc(hero.t)}</h2>
-      <div class="hdate">${hero.span?esc(hero.span):(hero.hijri?esc(fmtH(hero.hijri)):esc(recurDesc2(hero)))} \u00b7 ${esc(fmtGshort(hero.date))}</div>
-      <div class="count"><span class="num">${wl.now?wl.n:wl.n}</span><span class="lbl">${wl.now?(wl.u||''):wl.u}${hero.est?'  \u00b7  ':''}${hero.est?'<span class="tag est">perkiraan</span>':''}</span></div>
-      ${hero.ins?`<div class="insight">${esc(hero.ins)}</div>`:''}
+    const n=daysFromToday(hero.date);
+    const dG=fmtGshort(hero.date);
+    const wd=DG[noon(hero.date).getDay()];
+    // sub-meta: identitas Hijriah / pola keberulangan \u2014 TIDAK pernah tanggal Masehi (sudah ada di strip atas)
+    let sub='';
+    if(hero.span) sub=esc(hero.span);
+    else if(hero.weekly) sub='Setiap '+esc(wd);
+    else if(hero.hijri) sub=esc(fmtH(hero.hijri));
+    else if(hero.recurDesc) sub=esc(hero.recurDesc);
+    const eyebrow = n===0?'Sedang berlangsung':'Momentum terdekat';
+    let temporal;
+    if(n===0){                       // hari ini \u2014 frasa, bukan angka raksasa; tanpa tanggal (tak menduplikasi strip)
+      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">Hari Ini</span></div>`;
+    } else if(n===1){                // besok \u2014 frasa + tanggal target (bukan hari ini, jadi tak duplikat)
+      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">Besok</span><span class="seal-sub">${esc(wd)} \u00b7 ${esc(dG)}</span></div>`;
+    } else if(n<0){
+      temporal=`<div class="hero-rule"></div><div class="hero-now"><span class="seal">Telah lewat</span><span class="seal-sub">${esc(wd)} \u00b7 ${esc(dG)}</span></div>`;
+    } else {                         // hitung mundur \u2014 angka besar memang tepat di sini
+      temporal=`<div class="hero-rule"></div><div class="hero-count"><span class="num">${n}</span><span class="unit"><span class="u">hari lagi</span><span class="d">${esc(wd)}, ${esc(dG)}</span></span>${hero.est?'<span class="tag est">perkiraan</span>':''}</div>`;
+    }
+    html+=`<div class="hero ${n===0?'now':'soon'}">${moonSVG}
+      <div class="hero-eyebrow"><span class="dot"></span>${eyebrow}</div>
+      <h2 class="hero-title">${esc(hero.t)}</h2>
+      ${sub?`<div class="hero-sub">${sub}</div>`:''}
+      ${temporal}
+      ${hero.ins?`<div class="hero-quote"><p>${esc(hero.ins)}</p></div>`:''}
     </div>`;
   }
 

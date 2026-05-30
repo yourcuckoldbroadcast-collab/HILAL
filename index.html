@@ -837,6 +837,14 @@ const SYS_SCHED={                                     // jam baku ibadah sistem 
   'sys-subuh':{min:285,label:'04.45 WIB'},          // Sedekah Subuh mulai 04.45 WIB
   'sys-kahfi':{min:300,label:'05.00 WIB'},          // Al-Kahfi mulai 05.00 WIB
   'sys-tasbih':{min:120,label:'02.00 WIB'},         // Qiyamul Lail \u2014 mulai 02.00 WIB (memimpin hari)
+  // ibadah harian tambahan (jam WIB)
+  'sys-sujudsyukur':{min:120,label:'02.00 WIB'},
+  'sys-tahajud':{min:120,label:'02.00 WIB'},
+  'sys-shalawat':{min:120,label:'02.00 WIB'},
+  'sys-quran':{min:360,label:'06.00 WIB'},
+  'sys-matsurat':{min:420,label:'07.00 WIB'},
+  'sys-taubat':{min:1200,label:'20.00 WIB'},
+  'sys-yunus':{min:1205,label:'20.05 WIB'},
 };
 function clockMin(t){ const p=(t||'').split(':'); const m=(+p[0])*60+(+p[1]); return isNaN(m)?null:m; }
 // Jadwal untuk satu item dapat-ditandai (sistem via prefix kunci, kustom via jam yang diisi pengguna).
@@ -1386,7 +1394,16 @@ function trackablesOnDay(date){ const g=noon(date); const h=g2h(g); const day=g.
     if(h.hm===10 && h.hd>=2 && out.every(o=>o.cat!=='puasa')) add('sys-syawal','puasa','Puasa Syawal'); }
   if(day===5) add('sys-kahfi','tilawah','Baca Surah Al-Kahfi');
   if(day===4 && h.hd<=7) addDual('sys-tasbih','shalat','qiyamul','Shalat Tasbih');   // malam Jumat pertama bulan Hijriah
-  if(sameDay(g,noon(new Date()))) add('sys-subuh','infaq','Sedekah Subuh');           // hanya hari ini, tanpa penanda kalender
+  if(sameDay(g,noon(new Date()))){                                                    // ibadah harian \u2014 pola sama spt Sedekah Subuh: muncul tiap hari, tanpa penanda kalender
+    add('sys-subuh','infaq','Sedekah Subuh');
+    add('sys-sujudsyukur','qiyamul','Sujud Syukur');
+    add('sys-tahajud','qiyamul','Shalat Tahajud');
+    add('sys-taubat','shalat','Shalat Sunnah Taubat');
+    add('sys-yunus','dzikir','Dzikir Nabi Yunus');
+    add('sys-quran','tilawah',"Membaca Al-Qur'an");
+    add('sys-shalawat','dzikir','Membaca Shalawat Nabi');
+    add('sys-matsurat','dzikir','Dzikir Al-Matsurat');
+  }
   for(const c of S.custom){ if(occursOn(c,g)) out.push({key:'u-'+c.id+'@'+toISO(g),cat:c.category||'shalat',t:c.title,day:toISO(g),customId:c.id}); }
   out.sort((a,b)=> schedule(a).min - schedule(b).min);   // urutkan amal hari ini menurut waktunya (tak lagi acak)
   return out; }
